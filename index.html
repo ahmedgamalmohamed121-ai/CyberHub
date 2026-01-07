@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberHub | FCI.ZU</title>
+
+    <!-- Meta Tags -->
+    <meta name="description"
+        content="CyberHub FCI.ZU - The ultimate platform for Computer Science & Cyber Security students. Code, learn, and master your skills.">
+    <meta name="theme-color" content="#0a0f1c">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Poppins:wght@500;600;700&display=swap"
+        rel="stylesheet">
+
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Pyodide (Python in Browser) -->
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"></script>
+</head>
+
+<body>
+    <div class="bg-blobs">
+        <div class="blob"></div>
+        <div class="blob blob-2"></div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="logo">
+            <span class="cyber-icon"><i class="fas fa-shield-alt"></i></span>
+            <span class="logo-text">CyberHub <span class="logo-sep">|</span> FCI.ZU</span>
+        </div>
+        <ul class="nav-links">
+            <li class="active" data-section="home">Home</li>
+            <li data-section="materials">Materials</li>
+            <li data-section="editor">Code Editor</li>
+        </ul>
+
+        <div class="nav-actions">
+            <button class="theme-toggle" onclick="toggleTheme()">
+                <i class="fas fa-moon"></i>
+            </button>
+            <button class="support-btn" onclick="openSupportModal()">Support</button>
+            <div class="mobile-menu-btn" onclick="toggleMobileMenu()">
+                <i class="fas fa-bars"></i>
+            </div>
+        </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main id="app">
+
+        <!-- HOME SECTION -->
+        <section id="home" class="view active-view">
+            <div class="hero">
+                <div class="hero-content">
+                    <h1 class="glitch" data-text="CyberHub FCI.ZU">CyberHub FCI.ZU</h1>
+                    <div class="hero-description-compact">
+                        <p>The Elite Integrated Platform for <span class="typing-text">FCI Zagazig University</span></p>
+                        <p class="sub-desc">A specialized academic hub featuring <strong>Detailed Lectures</strong>,
+                            <strong>Resource Files</strong>, <strong>Past Examinations</strong>, and <strong>Official
+                                Timetables</strong>
+                        </p>
+                    </div>
+
+
+
+                    <div class="cta-group">
+                        <button class="btn btn-primary" onclick="showSection('editor')">Start Coding</button>
+                        <button class="btn btn-secondary" onclick="showSection('materials')">Explore Materials</button>
+                    </div>
+                </div>
+                <div class="hero-cards">
+                    <div class="card glass-card" onclick="showSection('materials')">
+                        <i class="fas fa-book-open card-icon"></i>
+                        <h3>Study Materials</h3>
+                        <p>Curated resources for C++, Networks, and more.</p>
+                    </div>
+                    <div class="card glass-card" onclick="showSection('editor')">
+                        <i class="fas fa-code card-icon"></i>
+                        <h3>Code Editor</h3>
+                        <p>Multi-language online IDE with instant output.</p>
+                    </div>
+                    <div class="card glass-card" onclick="showSection('schedule')">
+                        <i class="fas fa-calendar-alt card-icon"></i>
+                        <h3>Academic Schedule</h3>
+                        <p>Weekly lecture & lab timetables for all levels.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Features preview / Ad space -->
+            <div class="ad-banner">
+                <span class="ad-label">Sponsored</span>
+                <p>Master Cyber Security with our Partner Courses!</p>
+            </div>
+        </section>
+
+        <!-- STUDY MATERIALS SECTION -->
+        <section id="materials" class="view hidden-view">
+            <button class="btn-back" onclick="showSection('home')"><i class="fas fa-arrow-left"></i> Back to
+                Home</button>
+            <div class="section-header">
+                <h2>Study Materials</h2>
+                <p>Select a subject to access resources.</p>
+            </div>
+            <div class="subjects-grid">
+                <!-- Subject Cards -->
+                <div class="subject-card" onclick="openSubject('cpp')">
+                    <div class="subject-icon cpp"><i class="fab fa-cuttlefish"></i></div>
+                    <h3>C++ Programming</h3>
+                    <p>Syntax, OOP, STL & more</p>
+                </div>
+                <div class="subject-card" onclick="openSubject('dsa')">
+                    <div class="subject-icon dsa"><i class="fas fa-project-diagram"></i></div>
+                    <h3>Data Structures</h3>
+                    <p>Arrays, Trees, Graphs</p>
+                </div>
+                <div class="subject-card" onclick="openSubject('math')">
+                    <div class="subject-icon math"><i class="fas fa-square-root-alt"></i></div>
+                    <h3>Discrete Math</h3>
+                    <p>Logic, Sets, Probability</p>
+                </div>
+                <div class="subject-card" onclick="openSubject('networks')">
+                    <div class="subject-icon networks"><i class="fas fa-network-wired"></i></div>
+                    <h3>Computer Networks</h3>
+                    <p>OSI, TCP/IP, Routing</p>
+                </div>
+                <div class="subject-card" onclick="openSubject('cyber')">
+                    <div class="subject-icon cyber"><i class="fas fa-user-secret"></i></div>
+                    <h3>Cyber Security</h3>
+                    <p>Crypto, Ethical Hacking</p>
+                </div>
+            </div>
+
+            <!-- Modal for Subject Content (Hidden by default) -->
+            <div id="subjectModal" class="modal">
+                <div class="modal-content">
+                    <span class="close-modal"
+                        onclick="document.getElementById('subjectModal').style.display='none'">&times;</span>
+                    <h2 id="modalTitle">Subject Name</h2>
+                    <div class="modal-body">
+                        <div class="resource-group">
+                            <h4><i class="fas fa-file-pdf"></i> PDF Files</h4>
+                            <ul id="pdfList">
+                                <li class="resource-item">
+                                    <span><i class="fas fa-file-pdf"></i> Lecture 1: Introduction.pdf</span>
+                                    <button class="btn-xs download">Download</button>
+                                </li>
+                                <li class="resource-item">
+                                    <span><i class="fas fa-file-pdf"></i> Lecture 2: Memory Mgmt.pdf</span>
+                                    <button class="btn-xs download">Download</button>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="resource-group">
+                            <h4><i class="fas fa-video"></i> Video Lessons</h4>
+                            <ul id="videoList">
+                                <li class="resource-item">
+                                    <span><i class="fas fa-play-circle"></i> Week 1: Basics</span>
+                                    <button class="btn-xs watch">Watch</button>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="resource-group">
+                            <h4><i class="fas fa-tasks"></i> Exams & Sheets</h4>
+                            <ul id="examList">
+                                <li class="resource-item">
+                                    <span><i class="fas fa-file-alt"></i> Midterm 2024.pdf</span>
+                                    <button class="btn-xs view">View</button>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CODE EDITOR SECTION -->
+        <section id="editor" class="view hidden-view">
+            <button class="btn-back" onclick="showSection('home')"><i class="fas fa-arrow-left"></i> Back to
+                Home</button>
+            <div class="editor-container">
+                <div class="editor-header">
+                    <div class="editor-controls">
+                        <select id="languageSelector" class="lang-select">
+                            <option value="python">Python</option>
+                            <option value="c">C</option>
+                            <option value="cpp">C++</option>
+                            <option value="java">Java</option>
+                            <option value="javascript">JavaScript</option>
+                            <option value="html">HTML/CSS</option>
+                            <option value="php">PHP</option>
+                            <option value="sql">SQL</option>
+                        </select>
+                        <span class="status-indicator">Ready</span>
+                    </div>
+                    <div class="editor-actions">
+                        <button class="btn-icon" id="clearBtn" title="Clear"><i class="fas fa-trash-alt"></i></button>
+                        <button class="btn-icon" id="copyBtn" title="Copy"><i class="fas fa-copy"></i></button>
+                        <button class="btn-run" id="runBtn"><i class="fas fa-play"></i> Run</button>
+                    </div>
+                </div>
+
+                <div class="editor-main">
+                    <div class="line-numbers" id="lineNumbers">1</div>
+                    <textarea id="codeArea" class="code-area" spellcheck="false"
+                        placeholder="// Write your code here..."></textarea>
+                </div>
+
+                <div class="editor-output">
+                    <div class="output-header">
+                        <span>Console Output</span>
+                        <button class="btn-icon-small" id="clearOutput">Clear</button>
+                    </div>
+                    <pre id="outputConsole" class="terminal-output">></pre>
+                </div>
+            </div>
+        </section>
+
+
+
+        <!-- ACADEMIC SCHEDULE SECTION -->
+        <section id="schedule" class="view hidden-view">
+            <button class="btn-back" onclick="showSection('home')"><i class="fas fa-arrow-left"></i> Back to
+                Home</button>
+            <div class="section-header">
+                <h2>Academic Schedule</h2>
+                <p>View or download the official timetables for FCI Zagazig University.</p>
+            </div>
+
+            <div class="schedule-list">
+                <!-- Single Schedule Item -->
+                <div class="schedule-item">
+                    <div class="item-icon"><i class="fas fa-calendar-alt text-cyan"></i></div>
+                    <div class="item-content">
+                        <h3 class="arabic-bold">الجدول</h3>
+                        <p>Second Term Schedule - Cyber Security</p>
+                    </div>
+                    <div class="item-actions">
+                        <button class="btn-preview" onclick="openSchedulePreview('lvl3')"><i class="fas fa-eye"></i>
+                            Preview</button>
+                        <a href="#" class="btn-download" title="Download PDF"><i class="fas fa-download"></i>
+                            Download</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preview Modal -->
+            <div id="schedulePreviewModal" class="modal">
+                <div class="modal-content large-modal">
+                    <span class="close-modal" id="closeSchedulePreview">&times;</span>
+                    <h2 id="previewTitle">Schedule Preview</h2>
+                    <div class="preview-container">
+                        <img id="scheduleImage" src="" alt="Schedule"
+                            style="width: 100%; display: none; border-radius: 8px;">
+                        <div id="noPreviewMessage" style="text-align: center; padding: 3rem 0; opacity: 0.6;">
+                            <i class="fas fa-file-excel"
+                                style="font-size: 3rem; margin-bottom: 1rem; display: block;"></i>
+                            <p>Official timetable image not uploaded yet.<br>Please check back later or use the download
+                                option.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Support Modal -->
+    <div id="supportModal" class="modal">
+        <div class="modal-content small-modal">
+            <span class="close-modal" id="closeSupport">&times;</span>
+            <h2>Support CyberHub</h2>
+            <p>Help us keep the servers running and the content free!</p>
+            <div class="support-options">
+                <button class="btn-support et" onclick="copySupportNumber('01118770729', 'Etisalat Cash')"><i
+                        class="fas fa-mobile-alt"></i> Etisalat Cash</button>
+            </div>
+            <p id="support-feedback"
+                style="margin-top:1rem; font-size:0.9rem; min-height:1.5em; color: var(--primary-green);"></p>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div class="contact-panel">
+                <h4>Contact the Developer</h4>
+                <p class="dev-name">Eng/Ahmed Gamal</p>
+                <div class="social-links">
+                    <a href="https://wa.me/201118770729" target="_blank" class="social-link whatsapp"><i
+                            class="fab fa-whatsapp"></i></a>
+                    <a href="https://www.facebook.com/profile.php?id=100081657428939" target="_blank"
+                        class="social-link facebook"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#" class="social-link linkedin"><i class="fab fa-linkedin-in"></i></a>
+                    <a href="https://github.com/ahmedgamalmohamed121-ai" target="_blank" class="social-link github"><i
+                            class="fab fa-github"></i></a>
+                    <a href="https://ahmedgamalmohamed121-ai.github.io/Portfolio/" target="_blank"
+                        class="social-link portfolio" title="My Portfolio"><i class="fas fa-globe"></i></a>
+                </div>
+            </div>
+            <div class="copyright">
+                <p>&copy; 2026 CyberHub – Designed by Eng/Ahmed Gamal</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
