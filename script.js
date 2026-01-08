@@ -16,29 +16,20 @@ navLinks.forEach(link => {
 
         // Close mobile menu if open
         if (window.innerWidth <= 768) {
-            navLinksContainer.style.display = 'none';
+            navLinksContainer.classList.remove('active');
         }
     });
 });
 
 // Mobile Menu Toggle
-mobileMenuBtn.addEventListener('click', () => {
-    if (navLinksContainer.style.display === 'flex') {
-        navLinksContainer.style.display = 'none';
-        navLinksContainer.classList.remove('active');
-    } else {
-        navLinksContainer.style.display = 'flex';
-        navLinksContainer.style.flexDirection = 'column';
-        navLinksContainer.style.position = 'absolute';
-        navLinksContainer.style.top = '60px'; // Adjust based on navbar height
-        navLinksContainer.style.left = '0';
-        navLinksContainer.style.width = '100%';
-        navLinksContainer.style.background = 'var(--bg-card)'; // Use variable
-        navLinksContainer.style.padding = '1rem';
-        navLinksContainer.style.zIndex = '999';
-        navLinksContainer.style.boxShadow = '0 5px 15px rgba(0,0,0,0.5)';
-    }
-});
+function toggleMobileMenu() {
+    navLinksContainer.classList.toggle('active');
+}
+
+// Ensure the button also works if event listener is preferred or for compatibility
+if (mobileMenuBtn) {
+    mobileMenuBtn.onclick = toggleMobileMenu;
+}
 
 // Theme Toggle Logic
 function toggleTheme() {
@@ -808,10 +799,10 @@ function searchGrades(forcedId = null) {
         const tableBody = document.getElementById('gradesTableBody');
         tableBody.innerHTML = data.subjects.map(s => `
             <tr>
-                <td>${s.name}</td>
-                <td>${s.degree}</td>
-                <td class="${s.grade.startsWith('A') ? 'grade-a' : 'grade-b'}">${s.grade}</td>
-                <td>${s.points}</td>
+                <td data-label="Subject">${s.name}</td>
+                <td data-label="Degrees">${s.degree}</td>
+                <td data-label="Grade" class="${s.grade.startsWith('A') ? 'grade-a' : 'grade-b'}">${s.grade}</td>
+                <td data-label="Points">${s.points}</td>
             </tr>
         `).join('');
 
