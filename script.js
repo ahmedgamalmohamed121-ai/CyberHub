@@ -53,15 +53,16 @@ function toggleTheme() {
     }, 400);
 }
 
-// Check Local Storage on load
-if (localStorage.getItem('theme') === 'light') {
-    document.body.classList.add('light-mode');
-    const themeBtn = document.querySelector('.theme-toggle i');
-    if (themeBtn) {
-        themeBtn.classList.remove('fa-moon');
-        themeBtn.classList.add('fa-sun');
+// Check Local Storage and Sync UI on load
+window.addEventListener('DOMContentLoaded', () => {
+    if (localStorage.getItem('theme') === 'light' || document.body.classList.contains('light-mode')) {
+        document.body.classList.add('light-mode');
+        const themeBtn = document.querySelector('.theme-toggle i');
+        if (themeBtn) {
+            themeBtn.className = 'fas fa-sun';
+        }
     }
-}
+});
 
 // Show Section Function
 function showSection(sectionId) {

@@ -24,8 +24,19 @@
     <!-- CSS -->
     <link rel="stylesheet" href="style.css">
 
-    <!-- Pyodide (Python in Browser) -->
-    <script src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"></script>
+    <!-- Pyodide (Python in Browser) - Defer to improve initial load -->
+    <script defer src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"></script>
+
+    <!-- Theme Initialization - Fast check to prevent flash -->
+    <script>
+        (function () {
+            const theme = localStorage.getItem('theme');
+            if (theme === 'light') {
+                document.documentElement.classList.add('light-mode');
+                document.body?.classList.add('light-mode');
+            }
+        })();
+    </script>
 </head>
 
 <body>
