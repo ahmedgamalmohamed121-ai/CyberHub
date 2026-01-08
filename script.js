@@ -42,18 +42,24 @@ mobileMenuBtn.addEventListener('click', () => {
 
 // Theme Toggle Logic
 function toggleTheme() {
+    // Add temporary class to handle smooth transition
+    document.body.classList.add('theme-transition');
+
     document.body.classList.toggle('light-mode');
 
     const themeBtn = document.querySelector('.theme-toggle i');
     if (document.body.classList.contains('light-mode')) {
         localStorage.setItem('theme', 'light');
-        themeBtn.classList.remove('fa-moon');
-        themeBtn.classList.add('fa-sun');
+        if (themeBtn) themeBtn.className = 'fas fa-sun';
     } else {
         localStorage.setItem('theme', 'dark');
-        themeBtn.classList.remove('fa-sun');
-        themeBtn.classList.add('fa-moon');
+        if (themeBtn) themeBtn.className = 'fas fa-moon';
     }
+
+    // Remove the transition class after animation finishes to keep performance high
+    setTimeout(() => {
+        document.body.classList.remove('theme-transition');
+    }, 400);
 }
 
 // Check Local Storage on load
@@ -191,51 +197,181 @@ const copyBtn = document.getElementById('copyBtn');
 const clearOutput = document.getElementById('clearOutput');
 const languageSelector = document.getElementById('languageSelector');
 
-// Code Templates for each language
+// Comprehensive Code Templates for College Projects
 const codeTemplates = {
-    python: `# Python Code
-print("Hello from CyberHub!")`,
+    python: `# Python 3 - Mega Template
+import sys
+import os
+import math
+import random
+import time
+import datetime
+import collections
+import itertools
 
-    javascript: `// JavaScript Code
-console.log("Hello from CyberHub!");`,
+def main():
+    """ Main entry point of the app """
+    print("Welcome to CyberHub Python IDE!")
+    print(f"Current Time: {datetime.datetime.now()}")
+    print("---------------------------------")
+    
+    # Your code here
+    print("Hello from CyberHub!")
 
-    cpp: `#include <iostream>
+if __name__ == "__main__":
+    main()`,
+
+    javascript: `// JavaScript ES6+ Template
+"use strict";
+
+// Common Utility functions
+const utils = {
+    now: () => new Date().toLocaleString(),
+    random: (min, max) => Math.floor(Math.random() * (max - min + 1)) + min
+};
+
+const main = () => {
+    console.log("Welcome to CyberHub JavaScript Console");
+    console.log("Time:", utils.now());
+    console.log("---------------------------------");
+    
+    console.log("Hello from CyberHub!");
+};
+
+main();`,
+
+    cpp: `#include <bits/stdc++.h> // Includes all standard libraries (Perfect for College/CP)
+
 using namespace std;
 
+/**
+ * CyberHub C++ Academic Template
+ * Level: FCI.ZU Graduation Standard
+ */
 int main() {
-    cout << "Hello from CyberHub!";
+    // Optimization for fast I/O
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    cout << "Welcome to CyberHub C++ Environment" << endl;
+    cout << "---------------------------------" << endl;
+    
+    cout << "Hello from CyberHub!" << endl;
+
     return 0;
 }`,
 
     c: `#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+#include <ctype.h>
+#include <time.h>
+#include <stdbool.h>
 
+/**
+ * CyberHub C Standard Template
+ */
 int main() {
-    printf("Hello from CyberHub!");
+    printf("Welcome to CyberHub C Environment\\n");
+    printf("---------------------------------\\n");
+    
+    printf("Hello from CyberHub!\\n");
+    
     return 0;
 }`,
 
-    java: `public class Main {
+    java: `import java.util.*;
+import java.io.*;
+import java.math.*;
+import java.text.*;
+
+/**
+ * CyberHub Java Solution Template
+ */
+public class Main {
     public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        
+        System.out.println("Welcome to CyberHub Java Console");
+        System.out.println("---------------------------------");
+        
         System.out.println("Hello from CyberHub!");
     }
 }`,
 
     html: `<!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>CyberHub</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberHub Web Preview</title>
+    <!-- Modern Styling -->
+    <style>
+        :root { --primary: #00f3ff; --bg: #0f172a; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: var(--bg); 
+            color: white; 
+            display: flex; 
+            flex-direction: column;
+            align-items: center; 
+            justify-content: center; 
+            height: 100vh; 
+            margin: 0; 
+        }
+        .card {
+            background: rgba(255,255,255,0.05);
+            padding: 2rem;
+            border-radius: 15px;
+            border: 1px solid var(--primary);
+            box-shadow: 0 0 20px rgba(0,243,255,0.2);
+        }
+        h1 { color: var(--primary); margin-top: 0; }
+    </style>
 </head>
 <body>
-    <h1>Hello from CyberHub!</h1>
+    <div class="card">
+        <h1>CyberHub Web Editor</h1>
+        <p>Live Preview is working!</p>
+        <p>Edit this code to see changes.</p>
+    </div>
 </body>
 </html>`,
 
     php: `<?php
-echo "Hello from CyberHub!";
+/**
+ * CyberHub PHP Academic Template
+ */
+
+// Error reporting for development
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+header('Content-Type: text/plain');
+
+echo "Welcome to CyberHub PHP Console\\n";
+echo "---------------------------------\\n";
+
+echo "Hello from CyberHub!\\n";
+
+// PHP Logic here
+$date = date('Y-m-d H:i:s');
+echo "Current Server Time: " . $date . "\\n";
 ?>`,
 
-    sql: `-- SQL Query
-SELECT 'Hello from CyberHub!' AS message;`
+    sql: `-- CyberHub SQL Terminal Template
+-- ---------------------------------
+-- Use this for database queries and logic
+
+-- Example Schema Setup
+-- CREATE TABLE students (id INT PRIMARY KEY, name VARCHAR(100), gpa DECIMAL(3,2));
+-- INSERT INTO students VALUES (1, 'Ahmed Gamal', 3.9);
+
+SELECT 
+    'Hello from CyberHub!' AS Message,
+    'Database Ready' AS Status,
+    CURRENT_TIMESTAMP AS QueryTime;`
 };
 
 // Load template when language changes
@@ -334,31 +470,71 @@ runBtn.addEventListener('click', async () => {
             }
         }, 300);
     }
-    // C++ Smart Execution (Auto-completes missing parts)
+    // C++ & C Multi-command execution
     else if (lang === 'cpp' || lang === 'c') {
         setTimeout(() => {
             let processedCode = code.trim();
+            // Intelligent regex to capture strings or endl linked by << or printf
+            const regex = /(?:cout\s*<<|printf\s*\()?\s*(?:<<\s*)?["']([^"']*)["']|(?:cout\s*<<|<<\s*)\bendl\b|\bendl\b/g;
+            let matches = [...processedCode.matchAll(regex)];
 
-            // Check if code needs includes
-            if (!processedCode.includes('#include')) {
-                if (lang === 'cpp') {
-                    processedCode = '#include <iostream>\nusing namespace std;\n\n' + processedCode;
-                } else {
-                    processedCode = '#include <stdio.h>\n\n' + processedCode;
+            if (matches.length > 0) {
+                let resultChars = [];
+                for (const match of matches) {
+                    // Check if it's an endl keyword
+                    if (match[0].includes('endl')) {
+                        resultChars.push('\n');
+                    } else if (match[1] !== undefined) {
+                        // Interpret \n and \t explicitly from the string
+                        let text = match[1]
+                            .replace(/\\n/g, '\n')
+                            .replace(/\\t/g, '    ')
+                            .replace(/\\r/g, '')
+                            .replace(/\\"/g, '"')
+                            .replace(/\\'/g, "'");
+                        resultChars.push(text);
+                    }
                 }
+                outputConsole.innerText = resultChars.join('');
+            } else {
+                outputConsole.innerText = "(No output detected - Use cout or printf)";
             }
-
-            // Extract output from cout or printf
-            let match = processedCode.match(/(?:cout|printf)\s*<<?\s*["']([^"']+)["']/);
-            let output = match ? match[1] : "(No output)";
-
-            outputConsole.innerText = output;
         }, 500);
     }
-    // Other languages (mock)
+    // Java Multi-command execution
+    else if (lang === 'java') {
+        setTimeout(() => {
+            const regex = /System\.out\.print(?:ln)?\s*\(\s*["']([^"']+)["']\s*\)/g;
+            let matches = [...code.matchAll(regex)];
+            if (matches.length > 0) {
+                outputConsole.innerText = matches.map(m => m[1]).join('\n');
+            } else {
+                outputConsole.innerText = "(No output or unsupported command)";
+            }
+        }, 500);
+    }
+    // PHP & SQL Multi-command execution
+    else if (lang === 'php' || lang === 'sql') {
+        setTimeout(() => {
+            let regex;
+            if (lang === 'php') {
+                regex = /(?:echo|print)\s*(?:\()?\s*["']([^"']+)["']/g;
+            } else {
+                regex = /SELECT\s*["']([^"']+)["']/gi;
+            }
+
+            let matches = [...code.matchAll(regex)];
+            if (matches.length > 0) {
+                outputConsole.innerText = matches.map(m => m[1]).join('\n');
+            } else {
+                outputConsole.innerText = "Hello from " + lang.toUpperCase() + "!";
+            }
+        }, 400);
+    }
+    // Default Mock
     else {
         setTimeout(() => {
-            outputConsole.innerText = `Hello from ${lang}!`;
+            outputConsole.innerText = `Hello from ${lang.toUpperCase()}!`;
         }, 400);
     }
 });
@@ -532,3 +708,120 @@ if (closeSchedBtn) {
 }
 
 
+
+// Student Grades Search Logic
+const mockGradesData = {
+    // Real data will be added here
+};
+
+const studentSearchInput = document.getElementById('studentSearch');
+const suggestionsContainer = document.getElementById('searchSuggestions');
+
+if (studentSearchInput) {
+    studentSearchInput.addEventListener('input', (e) => {
+        const value = e.target.value.trim().toLowerCase();
+        suggestionsContainer.innerHTML = '';
+
+        if (value.length < 2) {
+            suggestionsContainer.style.display = 'none';
+            return;
+        }
+
+        const matches = [];
+        for (const id in mockGradesData) {
+            const student = mockGradesData[id];
+            if (id.toLowerCase().includes(value) || student.name.toLowerCase().includes(value)) {
+                matches.push({ id, ...student });
+            }
+        }
+
+        if (matches.length > 0) {
+            matches.forEach(match => {
+                const div = document.createElement('div');
+                div.className = 'suggestion-item';
+                div.innerHTML = `
+                    <span>${match.name}</span>
+                    <span class="suggestion-id">${match.id}</span>
+                `;
+                div.onclick = () => {
+                    studentSearchInput.value = match.id;
+                    suggestionsContainer.style.display = 'none';
+                    searchGrades(match.id);
+                };
+                suggestionsContainer.appendChild(div);
+            });
+            suggestionsContainer.style.display = 'block';
+        } else {
+            suggestionsContainer.style.display = 'none';
+        }
+    });
+
+    // Close suggestions when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!studentSearchInput.contains(e.target) && !suggestionsContainer.contains(e.target)) {
+            suggestionsContainer.style.display = 'none';
+        }
+    });
+}
+
+function searchGrades(forcedId = null) {
+    const input = forcedId || document.getElementById('studentSearch').value.trim().toLowerCase();
+    const resultDiv = document.getElementById('gradesResult');
+    const placeholder = document.getElementById('gradesPlaceholder');
+    const suggestions = document.getElementById('searchSuggestions');
+
+    if (suggestions) suggestions.style.display = 'none';
+
+    if (!input) {
+        alert("Please enter a name or Academic ID");
+        return;
+    }
+
+    // Find Logic
+    let data = null;
+    let foundId = "";
+
+    // Exact ID Match
+    if (mockGradesData[input]) {
+        data = mockGradesData[input];
+        foundId = input;
+    } else {
+        // Search by name
+        for (const id in mockGradesData) {
+            if (mockGradesData[id].name.toLowerCase() === input ||
+                (forcedId === null && mockGradesData[id].name.toLowerCase().includes(input))) {
+                data = mockGradesData[id];
+                foundId = id;
+                break;
+            }
+        }
+    }
+
+    if (data) {
+        placeholder.style.display = 'none';
+        resultDiv.style.display = 'block';
+
+        document.getElementById('resStudentName').innerText = data.name;
+        document.getElementById('resStudentID').innerText = "ID: " + foundId;
+        document.getElementById('resGPA').innerText = data.gpa;
+
+        const tableBody = document.getElementById('gradesTableBody');
+        tableBody.innerHTML = data.subjects.map(s => `
+            <tr>
+                <td>${s.name}</td>
+                <td>${s.degree}</td>
+                <td class="${s.grade.startsWith('A') ? 'grade-a' : 'grade-b'}">${s.grade}</td>
+                <td>${s.points}</td>
+            </tr>
+        `).join('');
+
+        // Scroll to result on mobile
+        if (window.innerWidth < 768) {
+            resultDiv.scrollIntoView({ behavior: 'smooth' });
+        }
+    } else {
+        alert("No results found. Try 'Ahmed' or '2024111'.");
+        resultDiv.style.display = 'none';
+        placeholder.style.display = 'block';
+    }
+}
