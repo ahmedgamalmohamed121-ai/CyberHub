@@ -878,27 +878,34 @@ footer::before {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 22px;
-    height: 22px;
+    width: 24px;
+    height: 24px;
+    margin-left: 5px;
+    vertical-align: middle;
 }
 
 .verified-badge {
-    color: #1d9bf0;
-    font-size: 1.35rem;
-    -webkit-text-fill-color: #1d9bf0;
+    color: #1d9bf0 !important;
+    font-size: 1.4rem !important;
+    -webkit-text-fill-color: #1d9bf0 !important;
     filter: drop-shadow(0 0 5px rgba(29, 155, 240, 0.3));
+    display: block !important;
 }
 
 .verified-check {
-    position: absolute;
-    color: #fff;
-    font-size: 0.65rem;
-    -webkit-text-fill-color: #fff;
-    font-weight: 900;
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    color: #fff !important;
+    font-size: 0.7rem !important;
+    -webkit-text-fill-color: #fff !important;
+    font-weight: 900 !important;
+    display: block !important;
 }
 
 .verified-wrapper:hover {
-    transform: scale(1.2) rotate(5deg);
+    transform: scale(1.1) rotate(5deg);
     transition: transform 0.3s ease;
 }
 
