@@ -867,6 +867,23 @@ footer::before {
     background-clip: text;
     -webkit-text-fill-color: transparent;
     font-family: var(--font-heading);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.verified-badge {
+    color: #1d9bf0;
+    /* Beautiful Twitter/X Blue */
+    font-size: 1.2rem;
+    -webkit-text-fill-color: #1d9bf0;
+    filter: drop-shadow(0 0 5px rgba(29, 155, 240, 0.3));
+    transition: transform 0.3s ease;
+}
+
+.verified-badge:hover {
+    transform: scale(1.2) rotate(5deg);
 }
 
 .social-links {
