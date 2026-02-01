@@ -22,10 +22,13 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- CSS -->
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=1.1">
 
-    <!-- Pyodide (Python in Browser) - Defer to improve initial load -->
-    <script defer src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"></script>
+    <!-- Monaco Editor -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
+
+    <!-- Pyodide (Python in Browser) - High-performance local engine -->
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
 
     <!-- Theme Initialization - Fast check to prevent flash -->
     <script>
@@ -59,7 +62,7 @@
         </ul>
 
         <div class="nav-actions">
-            <button class="theme-toggle" onclick="toggleTheme()">
+            <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Theme">
                 <i class="fas fa-moon"></i>
             </button>
             <button class="support-btn" onclick="openSupportModal()">Support</button>
@@ -69,6 +72,41 @@
         </div>
         </div>
     </nav>
+
+    <!-- API Settings Modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content glass-card">
+            <span class="close-modal" onclick="closeSettings()">&times;</span>
+            <h2><i class="fas fa-cogs"></i> API Settings</h2>
+            <p class="modal-desc">Configure your Judge0 connection. Use RapidAPI or your own self-hosted server.</p>
+
+            <div class="input-group" style="margin-bottom: 1.5rem;">
+                <label for="baseUrlInput">Judge0 Base URL</label>
+                <input type="text" id="baseUrlInput" placeholder="https://judge0-ce.p.rapidapi.com">
+                <small>Default: Judge0 Cloud. If self-hosting, enter your IP/Domain.</small>
+            </div>
+
+            <div class="input-group">
+                <label for="apiKeyInput">RapidAPI Key</label>
+                <input type="password" id="apiKeyInput" placeholder="Enter your X-RapidAPI-Key here...">
+                <small>Get your key from <a href="https://rapidapi.com/judge0/api/judge0-ce" target="_blank"
+                        style="color: var(--primary-cyan);">RapidAPI Judge0</a></small>
+            </div>
+
+            <div class="limitations-info">
+                <h3><i class="fas fa-shield-alt"></i> Execution Limitations</h3>
+                <ul>
+                    <li><i class="fas fa-clock"></i> <strong>Time Limit:</strong> 5 seconds per execution.</li>
+                    <li><i class="fas fa-memory"></i> <strong>Memory Limit:</strong> 128 MB.</li>
+                    <li><i class="fas fa-network-wired"></i> <strong>Network:</strong> No internet access inside the
+                        sandbox.</li>
+                </ul>
+            </div>
+
+            <button class="btn btn-primary" onclick="saveSettings()" style="width: 100%; margin-top: 1.5rem;">Save
+                Configuration</button>
+        </div>
+    </div>
 
     <!-- Main Content Area -->
     <main id="app">
@@ -130,7 +168,6 @@
                 Home</button>
             <div class="section-header">
                 <h2>Study Materials</h2>
-                <p>Select a subject to access resources.</p>
             </div>
             <div class="subjects-grid">
                 <!-- Subject Cards -->
@@ -195,7 +232,7 @@
                             <ul id="examList">
                                 <li class="resource-item">
                                     <span><i class="fas fa-file-alt"></i> Midterm 2024.pdf</span>
-                                    <button class="btn-xs view">View</button>
+                                    <a href="#" download="Midterm_2024.pdf" class="btn-xs download">Download</a>
                                 </li>
                             </ul>
                         </div>
@@ -217,31 +254,66 @@
                             <option value="cpp">C++</option>
                             <option value="java">Java</option>
                             <option value="javascript">JavaScript</option>
-                            <option value="html">HTML/CSS</option>
                             <option value="php">PHP</option>
                             <option value="sql">SQL</option>
                         </select>
-                        <span class="status-indicator">Ready</span>
+                        <div class="smart-handle-toggle">
+                            <span class="ctrl-label">Smart Fix:</span>
+                            <label class="switch-mini">
+                                <input type="checkbox" id="smartErrorToggle" checked>
+                                <span class="slider-mini round"></span>
+                            </label>
+                        </div>
+                        <div class="lang-preview-toggle">
+                            <button class="lang-btn active" id="btnAr">AR</button>
+                            <button class="lang-btn" id="btnEn">EN</button>
+                        </div>
                     </div>
                     <div class="editor-actions">
-                        <button class="btn-icon" id="clearBtn" title="Clear"><i class="fas fa-trash-alt"></i></button>
-                        <button class="btn-icon" id="copyBtn" title="Copy"><i class="fas fa-copy"></i></button>
-                        <button class="btn-run" id="runBtn"><i class="fas fa-play"></i> Run</button>
+                        <button class="btn-icon" id="clearBtn" title="Clear All"><i
+                                class="fas fa-trash-alt"></i></button>
+                        <button class="btn-icon" id="copyBtn" title="Copy Code"><i class="fas fa-copy"></i></button>
+                        <button class="btn-run" id="runBtn"><i class="fas fa-play"></i> RUN</button>
                     </div>
                 </div>
 
-                <div class="editor-main">
-                    <div class="line-numbers" id="lineNumbers">1</div>
-                    <textarea id="codeArea" class="code-area" spellcheck="false"
-                        placeholder="// Write your code here..."></textarea>
+                <div class="editor-main-layout">
+                    <div id="monacoEditor" class="monaco-wrapper"></div>
                 </div>
 
-                <div class="editor-output">
-                    <div class="output-header">
-                        <span>Console Output</span>
-                        <button class="btn-icon-small" id="clearOutput">Clear</button>
+                <div id="editorResizer" class="editor-resizer">
+                    <div class="resizer-handle"></div>
+                </div>
+
+                <div class="editor-output" id="editorOutput">
+                    <div class="output-header-tabs">
+                        <div class="tabs-container">
+                            <div class="output-tab active" data-tab="console"><i class="fas fa-terminal"></i> Console
+                            </div>
+                            <div class="output-tab" data-tab="smart" id="smartTab"><i class="fas fa-brain"></i> Smart
+                                Fix <span class="error-badge" id="errorCount">0</span></div>
+                        </div>
+                        <button class="btn-clear-output" id="clearOutput">Clear</button>
                     </div>
-                    <pre id="outputConsole" class="terminal-output">></pre>
+
+                    <div class="tab-contents">
+                        <div id="consolePanel" class="tab-panel active">
+                            <pre id="outputConsole" class="terminal-output">></pre>
+                            <div id="terminalInputLine" class="terminal-input-line" style="display: none;">
+                                <span class="prompt">></span>
+                                <input type="text" id="terminalInputField" spellcheck="false" autocomplete="off">
+                            </div>
+                        </div>
+
+                        <div id="smartPanel" class="tab-panel">
+                            <div id="smartFixContainer" class="smart-fix-container">
+                                <div class="empty-state">
+                                    <i class="fas fa-check-circle"></i>
+                                    <p>Your code is healthy! Run it to check for errors.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
@@ -375,7 +447,8 @@
                             class="fab fa-whatsapp"></i></a>
                     <a href="https://www.facebook.com/profile.php?id=100081657428939" target="_blank"
                         class="social-link facebook"><i class="fab fa-facebook-f"></i></a>
-                    <a href="#" class="social-link linkedin"><i class="fab fa-linkedin-in"></i></a>
+                    <a href="https://www.linkedin.com/in/ahmed-gamal-43bb833a4" target="_blank"
+                        class="social-link linkedin"><i class="fab fa-linkedin-in"></i></a>
                     <a href="https://github.com/ahmedgamalmohamed121-ai" target="_blank" class="social-link github"><i
                             class="fab fa-github"></i></a>
                     <a href="https://ahmedgamalmohamed121-ai.github.io/Portfolio/" target="_blank"
@@ -388,7 +461,7 @@
         </div>
     </footer>
 
-    <script src="script.js"></script>
+    <script src="script.js?v=1.1"></script>
 </body>
 
 </html>

@@ -1,819 +1,815 @@
-// Navigation Logic
-const navLinks = document.querySelectorAll('.nav-links li');
-const views = document.querySelectorAll('.view');
-const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
-const navLinksContainer = document.querySelector('.nav-links');
+/* =========================================
+   CYBERHUB SMART IDE - CORE LOGIC
+   ========================================= */
 
-// Handle Navigation Click
-navLinks.forEach(link => {
-    link.addEventListener('click', () => {
-        const targetId = link.getAttribute('data-section');
-        showSection(targetId);
+let editor;
+let currentLanguage = 'python';
+let currentUIText = 'ar';
+let pyodide = null;
+let isPyodideLoading = false;
+let activeTab = 'console';
 
-        // Update Active State
-        navLinks.forEach(l => l.classList.remove('active'));
-        link.classList.add('active');
+const LANGUAGE_IDS = {
+    python: 71, javascript: 63, cpp: 54, c: 50, java: 62, php: 68, sql: 82
+};
 
-        // Close mobile menu if open
-        if (window.innerWidth <= 768) {
-            navLinksContainer.classList.remove('active');
-        }
-    });
-});
+// --- JUDGE0 CONFIG ---
+let RAPIDAPI_KEY = localStorage.getItem('judge0_api_key') || "";
+let JUDGE0_BASE_URL = localStorage.getItem('judge0_base_url') || "https://ce.judge0.com";
+const RAPIDAPI_HOST = new URL(JUDGE0_BASE_URL).host;
 
-// Mobile Menu Toggle
-function toggleMobileMenu() {
-    navLinksContainer.classList.toggle('active');
-}
+const MONACO_MODES = {
+    python: 'python', javascript: 'javascript', cpp: 'cpp', c: 'c', java: 'java', php: 'php', sql: 'sql'
+};
 
-// Ensure the button also works if event listener is preferred or for compatibility
-if (mobileMenuBtn) {
-    mobileMenuBtn.onclick = toggleMobileMenu;
-}
+require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs' } });
 
-// Theme Toggle Logic
-function toggleTheme() {
-    // Add temporary class to handle smooth transition
-    document.body.classList.add('theme-transition');
-
-    document.body.classList.toggle('light-mode');
-
-    const themeBtn = document.querySelector('.theme-toggle i');
-    if (document.body.classList.contains('light-mode')) {
-        localStorage.setItem('theme', 'light');
-        if (themeBtn) themeBtn.className = 'fas fa-sun';
-    } else {
-        localStorage.setItem('theme', 'dark');
-        if (themeBtn) themeBtn.className = 'fas fa-moon';
-    }
-
-    // Remove the transition class after animation finishes to keep performance high
-    setTimeout(() => {
-        document.body.classList.remove('theme-transition');
-    }, 400);
-}
-
-// Check Local Storage and Sync UI on load
-window.addEventListener('DOMContentLoaded', () => {
-    if (localStorage.getItem('theme') === 'light' || document.body.classList.contains('light-mode')) {
+window.addEventListener('load', () => {
+    // Theme sync - index.html already adds the class, so we just sync internal state
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    if (savedTheme === 'light') {
+        document.documentElement.classList.add('light-mode');
         document.body.classList.add('light-mode');
-        const themeBtn = document.querySelector('.theme-toggle i');
-        if (themeBtn) {
-            themeBtn.className = 'fas fa-sun';
-        }
     }
-});
 
-// Show Section Function
-function showSection(sectionId) {
-    views.forEach(view => {
-        view.classList.remove('active-view');
-        view.classList.add('hidden-view');
-    });
-    const targetView = document.getElementById(sectionId);
-    if (targetView) {
-        targetView.classList.remove('hidden-view');
-        targetView.classList.add('active-view');
-        window.scrollTo(0, 0);
+    const activeSection = localStorage.getItem('activeSection') || 'home';
+    showSection(activeSection);
 
-        // Update nav active state
-        navLinks.forEach(l => {
-            if (l.getAttribute('data-section') === sectionId) {
-                l.classList.add('active');
-            } else {
-                l.classList.remove('active');
-            }
+    require(['vs/editor/editor.main'], function () {
+        const isLight = document.documentElement.classList.contains('light-mode');
+        editor = monaco.editor.create(document.getElementById('monacoEditor'), {
+            value: getCodeTemplate('python'),
+            language: 'python',
+            theme: isLight ? 'vs' : 'vs-dark',
+            automaticLayout: true,
+            fontSize: 14, fontFamily: "'JetBrains Mono', monospace", lineHeight: 22,
+            minimap: { enabled: false }, padding: { top: 20 }, roundedSelection: true,
+            scrollBeyondLastLine: false, cursorBlinking: "smooth", cursorSmoothCaretAnimation: "on",
+            accessibilitySupport: 'off',
+            accessibilityStrategy: 'off'
         });
-    }
-}
+        editor.onDidChangeModelContent(() => {
+            const code = editor.getValue();
+            localStorage.setItem(`code_${currentLanguage}`, code);
+        });
+        editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
+            document.getElementById('runBtn').click();
+        });
+    });
+    setupEventListeners();
 
-// Support Modal
-function openSupportModal() {
-    const modal = document.getElementById('supportModal');
-    if (modal) {
-        modal.style.display = 'block';
-    }
-}
+    // Fail-safe: Periodically kill any remaining accessibility widgets (especially for mobile)
+    setInterval(() => {
+        const icons = document.querySelectorAll('.accessibility-widget, [aria-label*="Accessibility"], [title*="Keyboard"]');
+        icons.forEach(icon => icon.remove());
+    }, 1000);
+});
 
-const closeSupport = document.getElementById('closeSupport');
-if (closeSupport) {
-    closeSupport.addEventListener('click', () => {
-        document.getElementById('supportModal').style.display = 'none';
+function setupEventListeners() {
+    const runBtn = document.getElementById('runBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const copyBtn = document.getElementById('copyBtn');
+    const languageSelector = document.getElementById('languageSelector');
+    const clearOutput = document.getElementById('clearOutput');
+
+    document.querySelectorAll('.output-tab').forEach(tab => {
+        tab.addEventListener('click', () => switchOutputTab(tab.getAttribute('data-tab')));
+    });
+
+    // Navigation Logic
+    document.querySelectorAll('.nav-links li').forEach(li => {
+        li.addEventListener('click', () => {
+            const section = li.getAttribute('data-section');
+            if (section) showSection(section);
+        });
+    });
+
+    languageSelector.addEventListener('change', () => {
+        const lang = languageSelector.value;
+        currentLanguage = lang;
+        if (editor) {
+            monaco.editor.setModelLanguage(editor.getModel(), MONACO_MODES[lang]);
+            editor.setValue(localStorage.getItem(`code_${lang}`) || getCodeTemplate(lang));
+        }
+    });
+
+    runBtn.addEventListener('click', executeCode);
+    clearBtn.addEventListener('click', () => { editor.setValue(""); showToast("Cleared"); });
+    copyBtn.addEventListener('click', () => { navigator.clipboard.writeText(editor.getValue()).then(() => showToast("Copied!")); });
+    document.getElementById('btnAr').addEventListener('click', () => { currentUIText = 'ar'; updateUILanguage(); analyzeErrors("", editor.getValue()); });
+    document.getElementById('btnEn').addEventListener('click', () => { currentUIText = 'en'; updateUILanguage(); analyzeErrors("", editor.getValue()); });
+    clearOutput.addEventListener('click', () => {
+        document.getElementById('outputConsole').innerHTML = ">";
+        document.getElementById('errorCount').innerText = "0";
+        document.getElementById('smartFixContainer').innerHTML = `<div class="empty-state">✅ Healthy Code!</div>`;
+    });
+
+    // --- Panel Resizer Logic ---
+    const resizer = document.getElementById('editorResizer');
+    const outputPanel = document.getElementById('editorOutput');
+    let isResizing = false;
+
+    resizer.addEventListener('mousedown', (e) => {
+        isResizing = true;
+        document.body.style.cursor = 'row-resize';
+        document.body.style.userSelect = 'none';
+    });
+
+    window.addEventListener('mousemove', (e) => {
+        if (!isResizing) return;
+
+        const container = document.querySelector('.editor-container');
+        const containerRect = container.getBoundingClientRect();
+        const relativeY = e.clientY - containerRect.top;
+
+        // Calculate new height for output panel
+        // container height - relativeY - resizer height
+        const newHeight = containerRect.height - relativeY - resizer.offsetHeight;
+
+        if (newHeight > 80 && newHeight < containerRect.height * 0.8) {
+            outputPanel.style.height = `${newHeight}px`;
+            if (editor) editor.layout(); // Refresh Monaco
+        }
+    });
+
+    window.addEventListener('mouseup', () => {
+        if (isResizing) {
+            isResizing = false;
+            document.body.style.cursor = 'default';
+            document.body.style.userSelect = 'auto';
+        }
     });
 }
 
-
-/* =========================================
-   STUDY MATERIALS LOGIC
-   ========================================= */
-const subjectModal = document.getElementById('subjectModal');
-const modalTitle = document.getElementById('modalTitle');
-const closeModal = document.querySelector('.modal-content .close-modal');
-const pdfList = document.getElementById('pdfList');
-const videoList = document.getElementById('videoList');
-const examList = document.getElementById('examList');
-
-closeModal.addEventListener('click', () => subjectModal.style.display = 'none');
-
-const subjectData = {
-    'cpp': {
-        title: 'C++ Programming',
-        pdfs: ['Intro to C++.pdf', 'OOP Concepts.pdf', 'STL Guide.pdf'],
-        videos: ['C++ Basics in 1 Hour', 'Pointers Explained', 'Memory Management'],
-        exams: ['Midterm 2024', 'Final Exam 2023']
-    },
-    'dsa': {
-        title: 'Data Structures & Algorithms',
-        pdfs: ['Arrays & Linked Lists.pdf', 'Sorting Algorithms.pdf', 'Graph Theory.pdf'],
-        videos: ['Big O Notation', 'Dijkstra Algorithm', 'Dynamic Programming 101'],
-        exams: ['DSA Quiz 1', 'Final Exam']
-    },
-    'math': {
-        title: 'Discrete Mathematics',
-        pdfs: ['Set Theory.pdf', 'Logic & Proofs.pdf', 'Combinatorics.pdf'],
-        videos: ['Truth Tables', 'Graph Coloring', 'Probability Basics'],
-        exams: ['Logic Quiz', 'Final Exam']
-    },
-    'networks': {
-        title: 'Computer Networks',
-        pdfs: ['OSI Model.pdf', 'TCP vs UDP.pdf', 'Subnetting.pdf'],
-        videos: ['How the Internet Works', 'Networking Layers', 'IP Addressing'],
-        exams: ['Cisco Packets Quiz', 'Final Exam']
-    },
-    'cyber': {
-        title: 'Cyber Security',
-        pdfs: ['Ethical Hacking 101.pdf', 'Cryptography.pdf', 'Web Security.pdf'],
-        videos: ['SQL Injection Demo', 'XSS Explained', 'Encryption Basics'],
-        exams: ['CTF Practice', 'Security+ Mock']
-    }
-};
-
-function openSubject(subject) {
-    const data = subjectData[subject];
-    if (data) {
-        modalTitle.innerText = data.title;
-
-        // Populate lists
-        pdfList.innerHTML = data.pdfs.map(f => `
-            <li class="resource-item">
-                <span><i class="far fa-file-alt"></i> ${f}</span>
-                <button class="btn-xs" onclick="alert('Downloading ${f}...')">Download</button>
-            </li>`).join('');
-
-        videoList.innerHTML = data.videos.map(v => `
-            <li class="resource-item">
-                <span><i class="far fa-play-circle"></i> ${v}</span>
-                <button class="btn-xs" onclick="alert('Opening video player for: ${v}')">Watch</button>
-            </li>`).join('');
-
-        examList.innerHTML = data.exams.map(e => `
-            <li class="resource-item">
-                <span><i class="far fa-clipboard"></i> ${e}</span>
-                <button class="btn-xs" onclick="alert('Opening preview for: ${e}')">View</button>
-            </li>`).join('');
-
-        subjectModal.style.display = 'block';
-    }
+function switchOutputTab(tabId) {
+    activeTab = tabId;
+    document.querySelectorAll('.output-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tabId));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === `${tabId}Panel`));
 }
 
-
-/* =========================================
-   CODE EDITOR LOGIC
-   ========================================= */
-const codeArea = document.getElementById('codeArea');
-const lineNumbers = document.getElementById('lineNumbers');
-const runBtn = document.getElementById('runBtn');
-const outputConsole = document.getElementById('outputConsole');
-const clearBtn = document.getElementById('clearBtn');
-const copyBtn = document.getElementById('copyBtn');
-const clearOutput = document.getElementById('clearOutput');
-const languageSelector = document.getElementById('languageSelector');
-
-// Comprehensive Code Templates for College Projects
-const codeTemplates = {
-    python: `# Python 3 - Mega Template
-import sys
-import os
-import math
-import random
-import time
-import datetime
-import collections
-import itertools
-
-def main():
-    """ Main entry point of the app """
-    print("Welcome to CyberHub Python IDE!")
-    print(f"Current Time: {datetime.datetime.now()}")
-    print("---------------------------------")
-    
-    # Your code here
-    print("Hello from CyberHub!")
-
-if __name__ == "__main__":
-    main()`,
-
-    javascript: `// JavaScript ES6+ Template
-"use strict";
-
-// Common Utility functions
-const utils = {
-    now: () => new Date().toLocaleString(),
-    random: (min, max) => Math.floor(Math.random() * (max - min + 1)) + min
-};
-
-const main = () => {
-    console.log("Welcome to CyberHub JavaScript Console");
-    console.log("Time:", utils.now());
-    console.log("---------------------------------");
-    
-    console.log("Hello from CyberHub!");
-};
-
-main();`,
-
-    cpp: `#include <bits/stdc++.h> // Includes all standard libraries (Perfect for College/CP)
-
-using namespace std;
-
-/**
- * CyberHub C++ Academic Template
- * Level: FCI.ZU Graduation Standard
- */
-int main() {
-    // Optimization for fast I/O
-    ios_base::sync_with_stdio(false);
-    cin.tie(NULL);
-
-    cout << "Welcome to CyberHub C++ Environment" << endl;
-    cout << "---------------------------------" << endl;
-    
-    cout << "Hello from CyberHub!" << endl;
-
-    return 0;
-}`,
-
-    c: `#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
-#include <ctype.h>
-#include <time.h>
-#include <stdbool.h>
-
-/**
- * CyberHub C Standard Template
- */
-int main() {
-    printf("Welcome to CyberHub C Environment\\n");
-    printf("---------------------------------\\n");
-    
-    printf("Hello from CyberHub!\\n");
-    
-    return 0;
-}`,
-
-    java: `import java.util.*;
-import java.io.*;
-import java.math.*;
-import java.text.*;
-
-/**
- * CyberHub Java Solution Template
- */
-public class Main {
-    public static void main(String[] args) {
-        Scanner sc = new Scanner(System.in);
-        
-        System.out.println("Welcome to CyberHub Java Console");
-        System.out.println("---------------------------------");
-        
-        System.out.println("Hello from CyberHub!");
-    }
-}`,
-
-    html: `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CyberHub Web Preview</title>
-    <!-- Modern Styling -->
-    <style>
-        :root { --primary: #00f3ff; --bg: #0f172a; }
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            background-color: var(--bg); 
-            color: white; 
-            display: flex; 
-            flex-direction: column;
-            align-items: center; 
-            justify-content: center; 
-            height: 100vh; 
-            margin: 0; 
-        }
-        .card {
-            background: rgba(255,255,255,0.05);
-            padding: 2rem;
-            border-radius: 15px;
-            border: 1px solid var(--primary);
-            box-shadow: 0 0 20px rgba(0,243,255,0.2);
-        }
-        h1 { color: var(--primary); margin-top: 0; }
-    </style>
-</head>
-<body>
-    <div class="card">
-        <h1>CyberHub Web Editor</h1>
-        <p>Live Preview is working!</p>
-        <p>Edit this code to see changes.</p>
-    </div>
-</body>
-</html>`,
-
-    php: `<?php
-/**
- * CyberHub PHP Academic Template
- */
-
-// Error reporting for development
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-
-header('Content-Type: text/plain');
-
-echo "Welcome to CyberHub PHP Console\\n";
-echo "---------------------------------\\n";
-
-echo "Hello from CyberHub!\\n";
-
-// PHP Logic here
-$date = date('Y-m-d H:i:s');
-echo "Current Server Time: " . $date . "\\n";
-?>`,
-
-    sql: `-- CyberHub SQL Terminal Template
--- ---------------------------------
--- Use this for database queries and logic
-
--- Example Schema Setup
--- CREATE TABLE students (id INT PRIMARY KEY, name VARCHAR(100), gpa DECIMAL(3,2));
--- INSERT INTO students VALUES (1, 'Ahmed Gamal', 3.9);
-
-SELECT 
-    'Hello from CyberHub!' AS Message,
-    'Database Ready' AS Status,
-    CURRENT_TIMESTAMP AS QueryTime;`
-};
-
-// Load template when language changes
-languageSelector.addEventListener('change', () => {
-    const selectedLang = languageSelector.value;
-    if (codeTemplates[selectedLang]) {
-        codeArea.value = codeTemplates[selectedLang];
-        updateLineNumbers();
-    }
-});
-
-// Load Python template on page load
-window.addEventListener('DOMContentLoaded', () => {
-    codeArea.value = codeTemplates.python;
-    updateLineNumbers();
-});
-
-// Line Numbers
-codeArea.addEventListener('keyup', updateLineNumbers);
-codeArea.addEventListener('keydown', updateLineNumbers); // Catch enter key better
-
-function updateLineNumbers() {
-    const lines = codeArea.value.split('\n').length;
-    lineNumbers.innerHTML = Array(lines).fill(0).map((_, i) => i + 1).join('<br>');
+function getCodeTemplate(lang) {
+    const templates = {
+        python: `# Welcome to CyberHub!\nprint("Welcome to CyberHub!")`,
+        javascript: `// Welcome to CyberHub!\nconsole.log("Welcome to CyberHub!");`,
+        cpp: `#include <iostream>\nusing namespace std;\n\n// Welcome to CyberHub!\nint main() {\n    cout << "Welcome to CyberHub!" << endl;\n    return 0;\n}`,
+        c: `#include <stdio.h>\n\n// Welcome to CyberHub!\nint main() {\n    printf("Welcome to CyberHub!\\n");\n    return 0;\n}`,
+        java: `// Welcome to CyberHub!\npublic class Main {\n    public static void main(String[] args) {\n        System.out.println("Welcome to CyberHub!");\n    }\n}`,
+        php: `<?php\n// Welcome to CyberHub!\necho "Welcome to CyberHub!";\n?>`,
+        sql: `-- Welcome to CyberHub!\nSELECT 'Welcome to CyberHub!' AS Message;`
+    };
+    return templates[lang] || "";
 }
 
-// Clear
-clearBtn.addEventListener('click', () => {
-    codeArea.value = '';
-    updateLineNumbers();
-});
+// --- REVOLUTIONARY SIMULATION ENGINES (Variables + Math Support) ---
+function runAdvancedSimulation(code, lang) {
+    if (validateSyntaxIntegrity(code, lang)) return null;
 
-// Copy
-copyBtn.addEventListener('click', () => {
-    codeArea.select();
-    document.execCommand('copy'); // Fallback or use Navigator CSS
-    navigator.clipboard.writeText(codeArea.value).then(() => {
-        alert("Code copied to clipboard!");
-    });
-});
-
-clearOutput.addEventListener('click', () => {
-    outputConsole.innerText = '>';
-});
-
-// Mock/Real Run
-runBtn.addEventListener('click', async () => {
-    const lang = languageSelector.value;
-    const code = codeArea.value;
-
-    if (!code.trim()) {
-        outputConsole.innerText = '> Error: No code to run!';
-        return;
-    }
-
-    outputConsole.innerText = '> Running...';
-
-    // Python Execution via Pyodide
-    if (lang === 'python') {
-        try {
-            if (!window.pyodide) {
-                outputConsole.innerText = '> Loading Python...';
-                window.pyodide = await loadPyodide({
-                    indexURL: "https://cdn.jsdelivr.net/pyodide/v0.23.4/full/"
-                });
-            }
-
-            // Capture stdout
-            let output = '';
-            window.pyodide.setStdout({
-                batched: (msg) => { output += msg + '\n'; }
-            });
-
-            // Run the code
-            await window.pyodide.runPythonAsync(code);
-
-            outputConsole.innerText = output || '(No output)';
-        } catch (err) {
-            outputConsole.innerText = 'Error: ' + err.message;
-        }
-    }
-    // JavaScript Execution
-    else if (lang === 'javascript') {
-        setTimeout(() => {
-            try {
-                let logs = [];
-                const originalLog = console.log;
-                console.log = (...args) => logs.push(args.join(' '));
-
-                eval(code);
-
-                outputConsole.innerText = logs.join('\n') || '(No output)';
-                console.log = originalLog;
-            } catch (e) {
-                outputConsole.innerText = 'Error: ' + e.message;
-            }
-        }, 300);
-    }
-    // C++ & C Multi-command execution
-    else if (lang === 'cpp' || lang === 'c') {
-        setTimeout(() => {
-            let processedCode = code.trim();
-            // Intelligent regex to capture strings or endl linked by << or printf
-            const regex = /(?:cout\s*<<|printf\s*\()?\s*(?:<<\s*)?["']([^"']*)["']|(?:cout\s*<<|<<\s*)\bendl\b|\bendl\b/g;
-            let matches = [...processedCode.matchAll(regex)];
-
-            if (matches.length > 0) {
-                let resultChars = [];
-                for (const match of matches) {
-                    // Check if it's an endl keyword
-                    if (match[0].includes('endl')) {
-                        resultChars.push('\n');
-                    } else if (match[1] !== undefined) {
-                        // Interpret \n and \t explicitly from the string
-                        let text = match[1]
-                            .replace(/\\n/g, '\n')
-                            .replace(/\\t/g, '    ')
-                            .replace(/\\r/g, '')
-                            .replace(/\\"/g, '"')
-                            .replace(/\\'/g, "'");
-                        resultChars.push(text);
-                    }
-                }
-                outputConsole.innerText = resultChars.join('');
-            } else {
-                outputConsole.innerText = "(No output detected - Use cout or printf)";
-            }
-        }, 500);
-    }
-    // Java Multi-command execution
-    else if (lang === 'java') {
-        setTimeout(() => {
-            const regex = /System\.out\.print(?:ln)?\s*\(\s*["']([^"']+)["']\s*\)/g;
-            let matches = [...code.matchAll(regex)];
-            if (matches.length > 0) {
-                outputConsole.innerText = matches.map(m => m[1]).join('\n');
-            } else {
-                outputConsole.innerText = "(No output or unsupported command)";
-            }
-        }, 500);
-    }
-    // PHP & SQL Multi-command execution
-    else if (lang === 'php' || lang === 'sql') {
-        setTimeout(() => {
-            let regex;
-            if (lang === 'php') {
-                regex = /(?:echo|print)\s*(?:\()?\s*["']([^"']+)["']/g;
-            } else {
-                regex = /SELECT\s*["']([^"']+)["']/gi;
-            }
-
-            let matches = [...code.matchAll(regex)];
-            if (matches.length > 0) {
-                outputConsole.innerText = matches.map(m => m[1]).join('\n');
-            } else {
-                outputConsole.innerText = "Hello from " + lang.toUpperCase() + "!";
-            }
-        }, 400);
-    }
-    // Default Mock
-    else {
-        setTimeout(() => {
-            outputConsole.innerText = `Hello from ${lang.toUpperCase()}!`;
-        }, 400);
-    }
-});
-
-
-/* =========================================
-   TOOLS LOGIC
-   ========================================= */
-
-// Base Converter
-function convertBase() {
-    const input = document.getElementById('converterInput').value;
-    const fromBase = parseInt(document.getElementById('converterFrom').value);
-    const toBase = parseInt(document.getElementById('converterTo').value);
-    const resultEl = document.getElementById('converterResult');
+    let output = "";
+    const variables = {};
+    const lines = code.split('\n');
 
     try {
-        const decimalValue = parseInt(input, fromBase);
-        if (isNaN(decimalValue)) throw new Error("Invalid Input");
-        const result = decimalValue.toString(toBase).toUpperCase();
-        resultEl.innerText = `Result: ${result}`;
+        lines.forEach(line => {
+            const t = line.trim();
+            if (!t || t.startsWith('//') || t.startsWith('#')) return;
+
+            // 1. Variable Assignment (int x = 5; or x += 10;)
+            // Stricter regex to avoid matching cout/printf
+            const varMatch = t.match(/(?:int|float|double|var|let)?\s*([a-zA-Z_]\w*)\s*(\+=|-=|\*=| \/=|=)\s*([^;]+)/);
+            if (varMatch) {
+                const varName = varMatch[1].trim();
+                const operator = varName === 'cout' || varName === 'printf' ? null : varMatch[2].trim();
+                if (operator) {
+                    let expression = varMatch[3].trim();
+
+                    Object.keys(variables).forEach(v => {
+                        const regex = new RegExp(`\\b${v}\\b`, 'g');
+                        expression = expression.replace(regex, variables[v]);
+                    });
+
+                    const newVal = safeEvalMath(expression);
+
+                    if (operator === '+=' && variables[varName] !== undefined) variables[varName] += newVal;
+                    else if (operator === '-=' && variables[varName] !== undefined) variables[varName] -= newVal;
+                    else if (operator === '*=' && variables[varName] !== undefined) variables[varName] *= newVal;
+                    else if (operator === '/=' && variables[varName] !== undefined) variables[varName] /= newVal;
+                    else variables[varName] = newVal; // Default assignment
+                    return;
+                }
+            }
+
+            // 2. Output Logic (Language Specific)
+            if (lang === 'cpp') {
+                const coutMatch = t.match(/cout\s*<<\s*([^;]+)/);
+                if (coutMatch) {
+                    let parts = coutMatch[1].split('<<');
+                    parts.forEach(p => {
+                        let val = p.trim();
+                        if (val === 'endl') output += '\n';
+                        else if (val.startsWith('"') && val.endsWith('"')) output += val.slice(1, -1);
+                        else {
+                            // Replace variables
+                            Object.keys(variables).forEach(v => {
+                                const regex = new RegExp(`\\b${v}\\b`, 'g');
+                                val = val.replace(regex, variables[v]);
+                            });
+                            output += safeEvalMath(val);
+                        }
+                    });
+                }
+            } else if (lang === 'c') {
+                const printfMatch = t.match(/printf\s*\("([^"]+)"\s*(?:,\s*([^)]+))?\)/);
+                if (printfMatch) {
+                    let fmt = printfMatch[1];
+                    let args = printfMatch[2] ? printfMatch[2].split(',') : [];
+                    args = args.map(arg => {
+                        let val = arg.trim();
+                        Object.keys(variables).forEach(v => {
+                            const regex = new RegExp(`\\b${v}\\b`, 'g');
+                            val = val.replace(regex, variables[v]);
+                        });
+                        return safeEvalMath(val);
+                    });
+
+                    let result = fmt.replace(/%d|%f|%i|%s/g, () => args.shift() || "");
+                    output += result.replace('\\n', '\n');
+                }
+            } else if (lang === 'java') {
+                const printlnMatch = t.match(/System\.out\.print(?:ln)?\s*\(([^)]+)\)/);
+                if (printlnMatch) {
+                    let val = printlnMatch[1].trim();
+                    if (val.startsWith('"') && val.endsWith('"')) {
+                        output += val.slice(1, -1) + (t.includes('println') ? '\n' : '');
+                    } else {
+                        Object.keys(variables).forEach(v => {
+                            const regex = new RegExp(`\\b${v}\\b`, 'g');
+                            val = val.replace(regex, variables[v]);
+                        });
+                        output += safeEvalMath(val) + (t.includes('println') ? '\n' : '');
+                    }
+                }
+            }
+        });
+        return output ? { stdout: output, stderr: "" } : null;
     } catch (e) {
-        resultEl.innerText = "Error: Invalid Input for Base " + fromBase;
+        return { stdout: "", stderr: "Simulation Error: " + e.message };
     }
 }
 
-// Bitwise Calc
-function calcBitwise() {
-    const a = parseInt(document.getElementById('bitA').value);
-    const b = parseInt(document.getElementById('bitB').value);
-    const op = document.getElementById('bitOp').value;
-    let res = 0;
-
-    if (isNaN(a)) { document.getElementById('bitResult').innerText = "Invalid Input"; return; }
-
-    switch (op) {
-        case 'AND': res = a & b; break;
-        case 'OR': res = a | b; break;
-        case 'XOR': res = a ^ b; break;
-        case 'NOT': res = ~a; break;
+function safeEvalMath(expr) {
+    try {
+        // Clean expression
+        let clean = expr.replace(/[fLd]$/i, '').replace(/f/g, '');
+        // Support common C++ operators if they leak
+        clean = clean.replace(/endl/g, '""');
+        return Function(`"use strict"; return (${clean})`)();
+    } catch (e) {
+        return expr;
     }
-    document.getElementById('bitResult').innerText = `Result: ${res} (Bin: ${res.toString(2)})`;
 }
 
-// Logic Gate Helper
-function showGateTruth() {
-    const gate = document.getElementById('gateSelect').value;
-    const div = document.getElementById('gateOutput');
-
-    let table = "";
-    if (gate === 'AND') {
-        table = "A B | Out<br>0 0 | 0<br>0 1 | 0<br>1 0 | 0<br>1 1 | 1";
-    } else if (gate === 'OR') {
-        table = "A B | Out<br>0 0 | 0<br>0 1 | 1<br>1 0 | 1<br>1 1 | 1";
-    } else if (gate === 'XOR') {
-        table = "A B | Out<br>0 0 | 0<br>0 1 | 1<br>1 0 | 1<br>1 1 | 0";
-    } else if (gate === 'NOT') {
-        table = "A | Out<br>0 | 1<br>1 | 0";
-    } else if (gate === 'NAND') {
-        table = "A B | Out<br>0 0 | 1<br>0 1 | 1<br>1 0 | 1<br>1 1 | 0";
+function runSqlSimulation(code) {
+    const t = code.trim().toLowerCase();
+    if (t.startsWith("select")) {
+        const mathMatch = code.match(/select\s+([^;as\n]+)/i);
+        if (mathMatch && !mathMatch[1].includes("'") && !mathMatch[1].includes('"')) {
+            return { stdout: safeEvalMath(mathMatch[1]).toString(), stderr: "" };
+        }
+        return { stdout: "ID | Message\n---|------------------\n1  | Welcome to CyberHub!\n(Simulated SQL Result)", stderr: "" };
     }
-
-    div.innerHTML = `<div style="font-family: monospace; background: #000; padding:10px; border-radius:4px;">${table}</div>`;
+    return null;
 }
 
-// Copy Support Number
-function copySupportNumber(number, provider) {
-    if (number.includes('xxx')) {
-        document.getElementById('support-feedback').innerText = "Number coming soon!";
-        document.getElementById('support-feedback').style.color = 'orange';
-        return;
+function runPhpSimulation(code) {
+    const echoMatch = code.match(/echo\s+([^;]+)/);
+    if (echoMatch) {
+        let val = echoMatch[1].trim();
+        if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+            return { stdout: val.slice(1, -1), stderr: "" };
+        }
+        return { stdout: safeEvalMath(val).toString(), stderr: "" };
     }
+    return null;
+}
 
-    navigator.clipboard.writeText(number).then(() => {
-        const feedback = document.getElementById('support-feedback');
-        feedback.innerText = `Copied ${provider}: ${number}`;
-        feedback.style.color = 'var(--primary-green)';
+function validateSyntaxIntegrity(code, lang) {
+    const lines = code.split('\n');
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if ((line.includes('printf(') || line.includes('cout <<') || line.includes('System.out')) && !line.includes(';') && !line.includes('{')) {
+            // Look ahead 1 line to see if it continues
+            if (i + 1 < lines.length && !lines[i + 1].trim().startsWith(';') && !lines[i + 1].trim().endsWith(';')) return true; // Likely broken
+        }
+        // Basic Quote matching per line
+        const quotes = (line.match(/"/g) || []).length;
+        if (quotes % 2 !== 0 && !line.includes("'")) return true; // Unclosed quote on line
+    }
+    return false;
+}
 
-        setTimeout(() => feedback.innerText = '', 3000);
-    }).catch(err => {
-        console.error('Failed to copy: ', err);
+// --- PYTHON ENGINE (Robust Load) ---
+async function initPyodide() {
+    if (pyodide) return true;
+    if (isPyodideLoading) return new Promise(resolve => {
+        const check = setInterval(() => { if (pyodide) { clearInterval(check); resolve(true); } }, 100);
     });
-}
-
-// ASCII Lookup
-function lookupAscii() {
-    const char = document.getElementById('asciiInput').value;
-    if (char.length > 0) {
-        document.getElementById('asciiResult').innerText = `Code: ${char.charCodeAt(0)}`;
+    isPyodideLoading = true;
+    const outputConsole = document.getElementById('outputConsole');
+    outputConsole.innerHTML += `<span class="info">> Initializing Python 3.10 engine... (Please wait)</span><br>`;
+    try {
+        if (typeof loadPyodide === 'undefined') {
+            throw new Error("Pyodide script failed to load. This usually happens due to a slow internet connection or an ad-blocker blocking the CDN. Please refresh the page.");
+        }
+        pyodide = await loadPyodide({ indexURL: "https://cdn.jsdelivr.net/pyodide/v0.24.1/full/" });
+        isPyodideLoading = false;
+        outputConsole.innerHTML += `<span class="success">> Python Engine Ready!</span><br>`;
+        return true;
+    } catch (e) {
+        outputConsole.innerHTML += `<span class="error">> Python Load Fail: ${e.message}</span><br>`;
+        isPyodideLoading = false; return false;
     }
 }
 
-// Window Click for Modals (Global)
-window.addEventListener('click', (e) => {
-    if (e.target == supportModal) supportModal.style.display = 'none';
-    if (e.target == subjectModal) subjectModal.style.display = 'none';
-});
-
-// Ad Rotation Logic
-const adTexts = [
-    "Master Cyber Security with our Partner Courses!",
-    "Get 50% off on Cloud Computing Certification.",
-    "Secure your future with a degree in InfoSec.",
-    "Learn Ethical Hacking - Start Today!",
-    "Host your projects with SafeCloud - 99.9% Uptime."
-];
-
-const adElement = document.querySelector('.ad-banner p');
-if (adElement) {
-    let adIndex = 0;
-    setInterval(() => {
-        // Fade out
-        adElement.style.opacity = '0';
-
-        setTimeout(() => {
-            // Change text
-            adIndex = (adIndex + 1) % adTexts.length;
-            adElement.innerText = adTexts[adIndex];
-
-            // Fade in
-            adElement.style.opacity = '1';
-        }, 500); // Wait for transition to finish (0.5s match CSS)
-
-    }, 5000); // Change every 5 seconds
+async function runLocalPython(code) {
+    const success = await initPyodide();
+    if (!success) throw new Error("Python failure.");
+    let output = "";
+    pyodide.setStdout({ batched: (s) => output += s + "\n" });
+    pyodide.setStderr({ batched: (s) => output += `<span class="error">${s}</span>\n` });
+    try {
+        await pyodide.runPythonAsync(code);
+        return { stdout: output, stderr: "" };
+    } catch (e) {
+        return { stdout: output, stderr: e.message };
+    }
 }
 
-// Schedule Preview Logic
-function openSchedulePreview(level) {
-    const modal = document.getElementById('schedulePreviewModal');
-    const title = document.getElementById('previewTitle');
-    const img = document.getElementById('scheduleImage');
-    const noMsg = document.getElementById('noPreviewMessage');
-
-    const titles = {
-        lvl1: "First Level - Sem 1 Schedule",
-        lvl2: "Second Level - Sem 1 Schedule",
-        lvl3: "Third Level - Sem 1 Schedule",
-        lvl4: "Fourth Level - Sem 1 Schedule"
-    };
-
-    title.innerText = titles[level] || "Schedule Preview";
-
-    // Reset preview
-    img.style.display = 'none';
-    img.src = '';
-    noMsg.style.display = 'block';
-
-    modal.style.display = 'block';
+function runLocalJS(code) {
+    let output = "";
+    const oldLog = console.log;
+    console.log = (...args) => output += args.join(' ') + "\n";
+    try {
+        eval(code);
+        console.log = oldLog;
+        return { stdout: output, stderr: "" };
+    } catch (e) {
+        console.log = oldLog;
+        return { stdout: output, stderr: e.message };
+    }
 }
 
-function closeSchedulePreview() {
-    const modal = document.getElementById('schedulePreviewModal');
-    modal.style.display = 'none';
+async function executeCode() {
+    const code = editor.getValue();
+    const runBtn = document.getElementById('runBtn');
+    if (!code.trim()) return;
+
+    runBtn.disabled = true;
+    runBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> RUNNING...';
+    // 1. Run Static Analysis (Smart Fix) IMMEDIATELY
+    // This shows errors (like missing semicolons) even if the server is not configured.
+    analyzeErrors("", code);
+
+    const preFindings = runRuleEngine("", code, currentLanguage);
+    if (preFindings.length > 0) {
+        outputConsole.innerHTML += `<span class="error">> Possible logic/syntax issues found by Smart Fix.</span><br>`;
+    }
+
+    try {
+        // 2. Attempt Server Execution
+        const url = `${JUDGE0_BASE_URL}/submissions?base64_encoded=false&wait=true`;
+
+        const headers = { 'content-type': 'application/json' };
+        if (RAPIDAPI_KEY) {
+            headers['x-rapidapi-key'] = RAPIDAPI_KEY;
+            headers['x-rapidapi-host'] = RAPIDAPI_HOST;
+        }
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify({
+                language_id: LANGUAGE_IDS[currentLanguage],
+                source_code: code
+            })
+        });
+
+        if (!response.ok) throw new Error(`Server Response: ${response.statusText}`);
+
+        const result = await response.json();
+
+        let html = "";
+        if (result?.compile_output) html += `<span class="error">${result.compile_output}</span>\n`;
+        if (result?.stdout) html += `<span class="output">${result.stdout}</span>\n`;
+        if (result?.stderr) html += `<span class="error">${result.stderr}</span>\n`;
+
+        outputConsole.innerHTML = `> ${html.replace(/\n/g, '<br>') || '<span class="info">(No output)</span>'}`;
+
+        // Analyze actual server results with Smart Fix
+        analyzeErrors(result ? (result.compile_output || result.stderr || "") : "", code);
+
+    } catch (err) {
+        console.error("Execution Error:", err);
+        outputConsole.innerHTML += `<span class="error">> ❌ Server Integration Error: ${err.message}</span><br>`;
+        outputConsole.innerHTML += `<span class="info">💡 Site is currently in 'Admin Review' mode. Please ensure Judge0 is configured (Ctrl+Shift+S) to see real-time output. Static Smart Fix is still active above.</span>`;
+    } finally {
+        runBtn.disabled = false;
+        runBtn.innerHTML = currentUIText === 'ar' ? '<i class="fas fa-play"></i> تشغيل' : '<i class="fas fa-play"></i> RUN';
+    }
 }
 
-// Window Click for Modals (Global Update)
-window.addEventListener('click', (e) => {
-    const supportModal = document.getElementById('supportModal');
-    const subjectModal = document.getElementById('subjectModal');
-    const scheduleModal = document.getElementById('schedulePreviewModal');
+async function executeCodeWithFallback(code) {
+    let result = null;
+    if (['cpp', 'c', 'java'].includes(currentLanguage)) result = runAdvancedSimulation(code, currentLanguage);
+    else if (currentLanguage === 'php') result = runPhpSimulation(code);
+    else if (currentLanguage === 'sql') result = runSqlSimulation(code);
 
-    if (e.target == supportModal) supportModal.style.display = 'none';
-    if (e.target == subjectModal) subjectModal.style.display = 'none';
-    if (e.target == scheduleModal) scheduleModal.style.display = 'none';
-});
-
-// Close button listener for schedule modal
-const closeSchedBtn = document.getElementById('closeSchedulePreview');
-if (closeSchedBtn) {
-    closeSchedBtn.onclick = closeSchedulePreview;
+    if (result) {
+        let html = "";
+        if (result.stdout) html += `<span class="output">${result.stdout}</span>\n`;
+        document.getElementById('outputConsole').innerHTML += `<br>> <span class="info">🛡️ Fallback Simulation:</span><br>${html.replace(/\n/g, '<br>')}`;
+        analyzeErrors("", code);
+    }
 }
 
+function analyzeErrors(rawError, code) {
+    const smartContainer = document.getElementById('smartFixContainer');
+    const findings = runRuleEngine(rawError, code, currentLanguage);
+    document.getElementById('errorCount').innerText = findings.length;
+    smartContainer.innerHTML = "";
+    if (findings.length > 0) {
+        findings.forEach(f => smartContainer.appendChild(createFixCard(f)));
+        document.getElementById('smartTab').classList.add('pulse');
+        setTimeout(() => document.getElementById('smartTab').classList.remove('pulse'), 2000);
+    } else smartContainer.innerHTML = `<div class="empty-state">✅ Healthy Code!</div>`;
+}
 
+function runRuleEngine(err, code, lang) {
+    const results = [];
+    const lines = code.split('\n');
 
-// Student Grades Search Logic
-const mockGradesData = {
-    // Real data will be added here
+    // 1. Bracket Matching Check
+    const stack = [];
+    const pairs = { '(': ')', '{': '}', '[': ']' };
+    for (let i = 0; i < code.length; i++) {
+        const char = code[i];
+        if (['(', '{', '['].includes(char)) stack.push({ char, pos: i });
+        else if ([')', '}', ']'].includes(char)) {
+            if (stack.length === 0) {
+                results.push({
+                    type: 'Brackets Error', line: getLineFromPos(code, i), part: char,
+                    explanation_ar: `قفلت قوس ${char} زيادة.`, explanation_en: `Extra closing bracket '${char}'.`, suggestion: "", tip_ar: "اتأكد من توازن الأقواس."
+                });
+            } else {
+                const last = stack.pop();
+                if (pairs[last.char] !== char) {
+                    results.push({
+                        type: 'Brackets Error', line: getLineFromPos(code, i), part: char,
+                        explanation_ar: `فتحت ${last.char} وقفلت ${char}.`, explanation_en: `Mismatched brackets.`, suggestion: "", tip_ar: "الأقواس لازم تكون أزواج متطابقة."
+                    });
+                }
+            }
+        }
+    }
+    stack.forEach(rem => {
+        results.push({
+            type: 'Brackets Error', line: getLineFromPos(code, rem.pos), part: rem.char,
+            explanation_ar: `فتحت قوس ${rem.char} ومقفلتهوش.`, explanation_en: `Unclosed bracket '${rem.char}'.`, suggestion: "", tip_ar: "لازم تقفل أي قوس تفتحه."
+        });
+    });
+
+    lines.forEach((l, i) => {
+        const t = l.trim();
+        if (!t) return;
+
+        // 2. STDLIB / Header Typos & Missing Brackets
+        if (lang === 'cpp' || lang === 'c') {
+            if (t.startsWith('#include')) {
+                const hasStart = t.includes('<') || t.includes('"');
+                const hasEnd = t.includes('>') || (t.match(/"/g) || []).length >= 2;
+
+                if (!hasStart || !hasEnd) {
+                    results.push({
+                        type: 'Include Error', line: i + 1, part: t,
+                        explanation_ar: `تنسيق الـ include غلط. لازم تكون <اسم المكتبة> أو "اسم المكتبة".`,
+                        explanation_en: `Malformed include directive. Use <header> or "header".`,
+                        suggestion: "#include <iostream>",
+                        tip_ar: "المكتبات بتتحط بين < >"
+                    });
+                } else {
+                    const header = t.match(/<([^>]+)>/)?.[1] || t.match(/"([^"]+)"/)?.[1];
+                    const validHeaders = ['iostream', 'stdio.h', 'vector', 'string', 'algorithm', 'cmath', 'stdlib.h', 'bits/stdc++.h'];
+                    if (header && !validHeaders.includes(header)) {
+                        if (header.includes('istre') || header.includes('iostre')) {
+                            results.push({ type: 'Header Error', line: i + 1, part: header, explanation_ar: `اسم المكتبة غلط، قصدك iostream؟`, explanation_en: `Typo in header name. Did you mean <iostream>?`, suggestion: `#include <iostream>`, tip_ar: "اتأكد من كتابة اسم المكتبة صح." });
+                        }
+                    }
+                }
+            }
+            if (t.includes('using') && t.includes('namespace')) {
+                if (!t.includes('std')) {
+                    results.push({ type: 'Namespace Error', line: i + 1, part: t, explanation_ar: `ناقصك كلمة std.`, explanation_en: `Missing 'std' in using namespace.`, suggestion: `using namespace std;`, tip_ar: "استخدم using namespace std;" });
+                } else if (!t.endsWith(';')) {
+                    results.push({ type: 'Missing Semicolon', line: i + 1, part: t, explanation_ar: `نسيت السيمي كولون (;) بعد الـ namespace.`, explanation_en: `Missing semicolon after namespace declaration.`, suggestion: t + ";", tip_ar: "أي سطر تعريفي لازم ينتهي بـ ;" });
+                }
+            }
+        }
+
+        // 3. Reserved Word Typos (Common)
+        const commonTypos = {
+            'prnt': 'print', 'prntf': 'printf', 'cont': 'cout', 'retun': 'return', ' स्टैटिक': 'static', 'publc': 'public', 'clas': 'class'
+        };
+        Object.keys(commonTypos).forEach(typo => {
+            if (t.includes(typo)) {
+                results.push({ type: 'Typo Detected', line: i + 1, part: typo, explanation_ar: `كاتب كلمة '${typo}' غلط، قصدك '${commonTypos[typo]}'.`, explanation_en: `Typo in keyword '${typo}'. Did you mean '${commonTypos[typo]}'?`, suggestion: l.replace(typo, commonTypos[typo]), tip_ar: "خد بالك من الحروف." });
+            }
+        });
+
+        // 4. Missing Quotes
+        const quotes = (t.match(/"/g) || []).length;
+        if (quotes % 2 !== 0 && !t.includes("'") && !t.startsWith('//') && !t.startsWith('#')) {
+            results.push({ type: 'Syntax Error', line: i + 1, part: t, explanation_ar: "علامات التنصيص مش مقفولة.", explanation_en: "Unclosed string.", suggestion: t + '"', tip_ar: "النص لازم يكون بين \"\"" });
+        }
+
+        // 5. Language Specifics (Python print() check)
+        if (lang === 'python') {
+            if (t.startsWith('print ') && !t.includes('(')) {
+                results.push({
+                    type: 'Syntax Error', line: i + 1, part: t,
+                    explanation_ar: "بايثون 3 لازم تستخدم أقواس مع الـ print.",
+                    explanation_en: "Python 3 needs parentheses for print().",
+                    suggestion: l.replace('print ', 'print(') + ')', tip_ar: "استعمل print(\"hello\")"
+                });
+            }
+            if ((t.startsWith('if ') || t.startsWith('for ') || t.startsWith('while ') || t.startsWith('def ')) && !t.endsWith(':')) {
+                results.push({
+                    type: 'Missing Colon', line: i + 1, part: t,
+                    explanation_ar: "نسيت النقطتين : في آخر السطر.",
+                    explanation_en: "Missing colon (:) at the end of statement.",
+                    suggestion: l + ":", tip_ar: "بايثون بتطلب : بعد الـ if/for/def"
+                });
+            }
+        }
+
+        // 6. Semicolon check
+        if (['c', 'cpp', 'java'].includes(lang)) {
+            const safeStarts = ['#', '//', 'using', 'public', 'int main', '{', '}', 'if', 'for', 'while', 'void', 'class'];
+            const needsSemicolon = t.startsWith('return') || t.startsWith('cout') || t.startsWith('printf') ||
+                t.startsWith('System.out') || t.includes('=') || t.includes('<<') ||
+                (t.length > 5 && !safeStarts.some(s => t.startsWith(s)));
+
+            if (needsSemicolon && !t.endsWith(';') && !t.endsWith('{') && !t.endsWith('}')) {
+                results.push({
+                    type: 'Missing Semicolon', line: i + 1, part: t,
+                    explanation_ar: "نسيت الـ ; في الآخر.",
+                    explanation_en: "Missing semicolon.",
+                    suggestion: l + ";", tip_ar: "كل أمر برمجي ينتهي بـ ;"
+                });
+            }
+        }
+    });
+
+    return results;
+}
+
+function getLineFromPos(code, pos) {
+    return code.substring(0, pos).split('\n').length;
+}
+
+function createFixCard(f) {
+    const card = document.createElement('div'); card.className = `fix-card ${currentUIText === 'ar' ? 'ar' : ''}`;
+    const h = document.createElement('div'); h.className = 'fix-header';
+    h.innerHTML = `<div class="fix-title"><i class="fas fa-exclamation-triangle"></i> ${f.type}</div><div class="fix-location">Line ${f.line}</div>`;
+    const e = document.createElement('div'); e.className = 'fix-explanation'; e.innerText = currentUIText === 'ar' ? f.explanation_ar : f.explanation_en;
+    card.appendChild(h); card.appendChild(e);
+
+    if (f.suggestion) {
+        const s = document.createElement('div'); s.className = 'fix-suggestion';
+        s.innerHTML = `<code>${f.suggestion}</code>`;
+
+        const tip = document.createElement('div');
+        tip.className = 'fix-tip';
+        tip.innerHTML = `<i class="fas fa-lightbulb"></i> ${currentUIText === 'ar' ? 'صلح السطر ده زي اللي فوق عشان الكود يشتغل.' : 'Fix this line manually following the suggestion above.'}`;
+
+        card.appendChild(s);
+        card.appendChild(tip);
+    }
+    return card;
+}
+
+function updateUILanguage() {
+    document.getElementById('btnAr').classList.toggle('active', currentUIText === 'ar');
+    document.getElementById('btnEn').classList.toggle('active', currentUIText === 'en');
+    const runBtn = document.getElementById('runBtn');
+    runBtn.innerHTML = currentUIText === 'ar' ? '<i class="fas fa-play"></i> تشغيل' : '<i class="fas fa-play"></i> RUN';
+}
+
+function showSection(id) {
+    document.querySelectorAll('.view').forEach(v => v.classList.toggle('active-view', v.id === id));
+    document.querySelectorAll('.view').forEach(v => v.classList.toggle('hidden-view', v.id !== id));
+    document.querySelectorAll('.nav-links li').forEach(li => li.classList.toggle('active', li.dataset.section === id));
+    localStorage.setItem('activeSection', id);
+}
+
+function toggleTheme() {
+    const isLight = document.documentElement.classList.toggle('light-mode');
+    document.body.classList.toggle('light-mode');
+    localStorage.setItem('theme', isLight ? 'light' : 'dark');
+    if (editor) monaco.editor.setTheme(isLight ? 'vs' : 'vs-dark');
+}
+
+function showToast(msg) {
+    const t = document.createElement('div'); t.className = 'toast-notification success'; t.innerHTML = `<span>${msg}</span>`;
+    document.body.appendChild(t); setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 500); }, 3000);
+}
+
+window.showSection = showSection; window.toggleTheme = toggleTheme; window.executeCode = executeCode;
+
+// --- API SETTINGS LOGIC (Hidden Admin Mode) ---
+window.openSettings = () => {
+    document.getElementById('apiKeyInput').value = localStorage.getItem('judge0_api_key') || "";
+    document.getElementById('baseUrlInput').value = localStorage.getItem('judge0_base_url') || "https://judge0-ce.p.rapidapi.com";
+    document.getElementById('settingsModal').style.display = 'flex';
 };
 
-const studentSearchInput = document.getElementById('studentSearch');
-const suggestionsContainer = document.getElementById('searchSuggestions');
+window.closeSettings = () => {
+    document.getElementById('settingsModal').style.display = 'none';
+};
 
-if (studentSearchInput) {
-    studentSearchInput.addEventListener('input', (e) => {
-        const value = e.target.value.trim().toLowerCase();
-        suggestionsContainer.innerHTML = '';
+window.saveSettings = () => {
+    const key = document.getElementById('apiKeyInput').value.trim();
+    const url = document.getElementById('baseUrlInput').value.trim() || "https://judge0-ce.p.rapidapi.com";
+    localStorage.setItem('judge0_api_key', key);
+    localStorage.setItem('judge0_base_url', url);
+    RAPIDAPI_KEY = key;
+    JUDGE0_BASE_URL = url;
+    showToast("Settings Saved! Admin Mode Active.");
+    closeSettings();
+    if (editor) analyzeErrors("", editor.getValue());
+};
 
-        if (value.length < 2) {
-            suggestionsContainer.style.display = 'none';
-            return;
-        }
+// Secret Shortcut: Ctrl + Shift + S
+window.addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 83) { // 83 is 'S'
+        e.preventDefault();
+        openSettings();
+    }
+});
 
-        const matches = [];
-        for (const id in mockGradesData) {
-            const student = mockGradesData[id];
-            if (id.toLowerCase().includes(value) || student.name.toLowerCase().includes(value)) {
-                matches.push({ id, ...student });
-            }
-        }
+// --- SUPPORT MODAL ---
+window.openSupportModal = () => {
+    document.getElementById('supportModal').style.display = 'flex';
+};
 
-        if (matches.length > 0) {
-            matches.forEach(match => {
-                const div = document.createElement('div');
-                div.className = 'suggestion-item';
-                div.innerHTML = `
-                    <span>${match.name}</span>
-                    <span class="suggestion-id">${match.id}</span>
-                `;
-                div.onclick = () => {
-                    studentSearchInput.value = match.id;
-                    suggestionsContainer.style.display = 'none';
-                    searchGrades(match.id);
-                };
-                suggestionsContainer.appendChild(div);
-            });
-            suggestionsContainer.style.display = 'block';
-        } else {
-            suggestionsContainer.style.display = 'none';
-        }
-    });
+window.copySupportNumber = (num, method) => {
+    navigator.clipboard.writeText(num);
+    const feedback = document.getElementById('support-feedback');
+    feedback.innerText = `Number (${num}) copied for ${method}!`;
+    setTimeout(() => feedback.innerText = "", 3000);
+};
 
-    // Close suggestions when clicking outside
-    document.addEventListener('click', (e) => {
-        if (!studentSearchInput.contains(e.target) && !suggestionsContainer.contains(e.target)) {
-            suggestionsContainer.style.display = 'none';
-        }
-    });
-}
+document.getElementById('closeSupport')?.addEventListener('click', () => {
+    document.getElementById('supportModal').style.display = 'none';
+});
 
-function searchGrades(forcedId = null) {
-    const input = forcedId || document.getElementById('studentSearch').value.trim().toLowerCase();
+// --- SCHEDULE PREVIEW ---
+window.openSchedulePreview = (lvl) => {
+    const modal = document.getElementById('schedulePreviewModal');
+    const img = document.getElementById('scheduleImage');
+    const msg = document.getElementById('noPreviewMessage');
+
+    modal.style.display = 'flex';
+    // For now, no images uploaded. Show message.
+    img.style.display = 'none';
+    msg.style.display = 'block';
+};
+
+document.getElementById('closeSchedulePreview')?.addEventListener('click', () => {
+    document.getElementById('schedulePreviewModal').style.display = 'none';
+});
+
+// --- STUDENT GRADES SYSTEM (Mock Database) ---
+const MOCK_STUDENTS = [
+    {
+        id: "2021001", name: "Ahmed Gamal", gpa: "3.8", grades: [
+            { subject: "C++ Programming", degree: "95", grade: "A+", points: "4.0" },
+            { subject: "Data Structures", degree: "88", grade: "A", points: "3.7" },
+            { subject: "Discrete Math", degree: "92", grade: "A+", points: "4.0" }
+        ]
+    },
+    {
+        id: "2021002", name: "Sara Mohamed", gpa: "3.5", grades: [
+            { subject: "C++ Programming", degree: "85", grade: "A-", points: "3.4" },
+            { subject: "Networks", degree: "90", grade: "A", points: "3.7" }
+        ]
+    }
+];
+
+window.searchGrades = () => {
+    const query = document.getElementById('studentSearch').value.trim();
     const resultDiv = document.getElementById('gradesResult');
     const placeholder = document.getElementById('gradesPlaceholder');
-    const suggestions = document.getElementById('searchSuggestions');
+    const tableBody = document.getElementById('gradesTableBody');
 
-    if (suggestions) suggestions.style.display = 'none';
+    const student = MOCK_STUDENTS.find(s => s.id === query || s.name.toLowerCase().includes(query.toLowerCase()));
 
-    if (!input) {
-        alert("Please enter a name or Academic ID");
-        return;
-    }
+    if (student) {
+        document.getElementById('resStudentName').innerText = student.name;
+        document.getElementById('resStudentID').innerText = `ID: ${student.id}`;
+        document.getElementById('resGPA').innerText = student.gpa;
 
-    // Find Logic
-    let data = null;
-    let foundId = "";
-
-    // Exact ID Match
-    if (mockGradesData[input]) {
-        data = mockGradesData[input];
-        foundId = input;
-    } else {
-        // Search by name
-        for (const id in mockGradesData) {
-            if (mockGradesData[id].name.toLowerCase() === input ||
-                (forcedId === null && mockGradesData[id].name.toLowerCase().includes(input))) {
-                data = mockGradesData[id];
-                foundId = id;
-                break;
-            }
-        }
-    }
-
-    if (data) {
-        placeholder.style.display = 'none';
-        resultDiv.style.display = 'block';
-
-        document.getElementById('resStudentName').innerText = data.name;
-        document.getElementById('resStudentID').innerText = "ID: " + foundId;
-        document.getElementById('resGPA').innerText = data.gpa;
-
-        const tableBody = document.getElementById('gradesTableBody');
-        tableBody.innerHTML = data.subjects.map(s => `
+        tableBody.innerHTML = student.grades.map(g => `
             <tr>
-                <td data-label="Subject">${s.name}</td>
-                <td data-label="Degrees">${s.degree}</td>
-                <td data-label="Grade" class="${s.grade.startsWith('A') ? 'grade-a' : 'grade-b'}">${s.grade}</td>
-                <td data-label="Points">${s.points}</td>
+                <td>${g.subject}</td>
+                <td>${g.degree}</td>
+                <td class="grade-${g.grade.charAt(0)}">${g.grade}</td>
+                <td>${g.points}</td>
             </tr>
         `).join('');
 
-        // Scroll to result on mobile
-        if (window.innerWidth < 768) {
-            resultDiv.scrollIntoView({ behavior: 'smooth' });
-        }
+        placeholder.style.display = 'none';
+        resultDiv.style.display = 'block';
+        showToast("Result Found!");
     } else {
-        alert("No results found. Try 'Ahmed' or '2024111'.");
-        resultDiv.style.display = 'none';
-        placeholder.style.display = 'block';
+        showToast("Student not found!");
     }
-}
+};
+
+// --- MOBILE MENU ---
+window.toggleMobileMenu = () => {
+    document.querySelector('.nav-links').classList.toggle('active');
+};
+
+// --- SUBJECT MATERIALS SYSTEM ---
+const SUBJECT_DATA = {
+    cpp: {
+        title: "C++ Programming",
+        pdfs: ["Lecture 1: Basics.pdf", "Lecture 2: OOP Principles.pdf", "STL Reference.pdf"],
+        videos: ["C++ Intro", "Classes & Objects", "Pointers Explained"],
+        exams: ["Midterm 2023.pdf", "Final 2023.pdf"]
+    },
+    dsa: {
+        title: "Data Structures",
+        pdfs: ["Linked Lists.pdf", "Trees & Graphs.pdf", "Sorting Algorithms.pdf"],
+        videos: ["DSA Intro", "Binary Trees", "Quick Sort Animation"],
+        exams: ["DSA Midterm.pdf"]
+    },
+    math: {
+        title: "Discrete Math",
+        pdfs: ["Logic & Proofs.pdf", "Set Theory.pdf"],
+        videos: ["Truth Tables", "Permutations"],
+        exams: ["Math Sheet 1.pdf"]
+    },
+    networks: {
+        title: "Computer Networks",
+        pdfs: ["OSI Model.pdf", "IP Addressing.pdf"],
+        videos: ["How Router Works", "TCP vs UDP"],
+        exams: ["Quiz 1.pdf"]
+    },
+    cyber: {
+        title: "Cyber Security",
+        pdfs: ["Ethical Hacking Intro.pdf", "Cryptography.pdf"],
+        videos: ["SQL Injection Demo", "Phishing Protection"],
+        exams: ["Cyber Final.pdf"]
+    }
+};
+
+window.openSubject = (id) => {
+    const data = SUBJECT_DATA[id];
+    if (!data) return;
+
+    document.getElementById('modalTitle').innerText = data.title;
+
+    // Inject PDFs
+    document.getElementById('pdfList').innerHTML = data.pdfs.map(file => `
+        <li class="resource-item">
+            <span><i class="fas fa-file-pdf"></i> ${file}</span>
+            <button class="btn-xs download">Download</button>
+        </li>
+    `).join('');
+
+    // Inject Videos
+    document.getElementById('videoList').innerHTML = data.videos.map(title => `
+        <li class="resource-item">
+            <span><i class="fas fa-play-circle"></i> ${title}</span>
+            <button class="btn-xs watch">Watch</button>
+        </li>
+    `).join('');
+
+    // Inject Exams
+    document.getElementById('examList').innerHTML = data.exams.map(file => `
+        <li class="resource-item">
+            <span><i class="fas fa-file-alt"></i> ${file}</span>
+            <button class="btn-xs download">Download</button>
+        </li>
+    `).join('');
+
+    document.getElementById('subjectModal').style.display = 'flex';
+};
+
+// Close all modals on outside click
+window.onclick = (event) => {
+    const modals = document.querySelectorAll('.modal');
+    modals.forEach(m => {
+        if (event.target == m) m.style.display = 'none';
+    });
+};
