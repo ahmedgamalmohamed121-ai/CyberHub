@@ -873,17 +873,33 @@ footer::before {
     gap: 10px;
 }
 
-.verified-badge {
-    color: #1d9bf0;
-    /* Beautiful Twitter/X Blue */
-    font-size: 1.2rem;
-    -webkit-text-fill-color: #1d9bf0;
-    filter: drop-shadow(0 0 5px rgba(29, 155, 240, 0.3));
-    transition: transform 0.3s ease;
+.verified-wrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
 }
 
-.verified-badge:hover {
+.verified-badge {
+    color: #1d9bf0;
+    font-size: 1.35rem;
+    -webkit-text-fill-color: #1d9bf0;
+    filter: drop-shadow(0 0 5px rgba(29, 155, 240, 0.3));
+}
+
+.verified-check {
+    position: absolute;
+    color: #fff;
+    font-size: 0.65rem;
+    -webkit-text-fill-color: #fff;
+    font-weight: 900;
+}
+
+.verified-wrapper:hover {
     transform: scale(1.2) rotate(5deg);
+    transition: transform 0.3s ease;
 }
 
 .social-links {
