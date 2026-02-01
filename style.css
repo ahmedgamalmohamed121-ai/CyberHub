@@ -888,6 +888,8 @@ footer::before {
     color: #1d9bf0 !important;
     font-size: 1.4rem !important;
     -webkit-text-fill-color: #1d9bf0 !important;
+    background-clip: unset !important;
+    -webkit-background-clip: unset !important;
     filter: drop-shadow(0 0 5px rgba(29, 155, 240, 0.3));
     display: block !important;
 }
@@ -900,6 +902,8 @@ footer::before {
     color: #fff !important;
     font-size: 0.7rem !important;
     -webkit-text-fill-color: #fff !important;
+    background-clip: unset !important;
+    -webkit-background-clip: unset !important;
     font-weight: 900 !important;
     display: block !important;
 }
