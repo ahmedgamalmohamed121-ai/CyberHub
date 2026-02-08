@@ -468,80 +468,120 @@
             <button class="btn-back" onclick="showSection('home')"><i class="fas fa-arrow-left"></i> Back to
                 Home</button>
             <div class="section-header">
-                <h2>🛠️ Admin Dashboard</h2>
-                <p>Manage announcements and system content.</p>
+                <h2>🛠️ Admin Command Center</h2>
+                <p>Strategic management of CyberHub internal systems.</p>
             </div>
 
-            <div class="admin-grid">
-                <div class="admin-card glass-card">
-                    <h3><i class="fas fa-plus-circle"></i> New Announcement</h3>
-                    <div class="input-group">
-                        <textarea id="adminAnnouncementText" placeholder="Type announcement here..." rows="4"
-                            style="width: 100%; background: rgba(0,0,0,0.2); border: 1px solid var(--primary-cyan); border-radius: 8px; color: white; padding: 10px; margin-top: 10px;"></textarea>
+            <div class="admin-layout">
+                <aside class="admin-sidebar" id="adminSidebar">
+                    <div class="admin-nav-item active" onclick="switchAdminTab('announcements')">
+                        <i class="fas fa-bullhorn"></i> Announcements
                     </div>
-                    <button class="btn btn-primary" onclick="postAdminAnnouncement()"
-                        style="width: 100%; margin-top: 1rem;">Post & Notify</button>
-                </div>
+                    <div class="admin-nav-item" onclick="switchAdminTab('materials')">
+                        <i class="fas fa-file-medical"></i> Materials
+                    </div>
+                    <div class="admin-nav-item" onclick="switchAdminTab('grades')">
+                        <i class="fas fa-graduation-cap"></i> Student Grades
+                    </div>
+                </aside>
 
-                <div class="admin-card glass-card">
-                    <h3><i class="fas fa-list"></i> Manage Feed</h3>
-                    <div id="adminAnnouncementList" class="admin-list">
-                        <!-- Admin list of announcements -->
+                <div class="admin-content-area">
+                    <!-- Announcements Tab -->
+                    <div id="tab-announcements" class="admin-tab">
+                        <div class="admin-card">
+                            <h3><i class="fas fa-plus-circle"></i> Broadcast New Announcement</h3>
+                            <div class="admin-input-group">
+                                <label>Message Body</label>
+                                <textarea id="adminAnnouncementText" placeholder="Target message for all users..."
+                                    rows="4"></textarea>
+                            </div>
+                            <button class="btn btn-primary" onclick="postAdminAnnouncement()"
+                                style="width: 100%;">Deploy & Notify</button>
+                        </div>
+                        <div class="admin-card" style="margin-top: 2rem;">
+                            <h3><i class="fas fa-history"></i> Transmission History</h3>
+                            <div id="adminAnnouncementList" class="admin-list"></div>
+                        </div>
                     </div>
-                </div>
 
-                <!-- MATERIALS MANAGER -->
-                <div class="admin-card glass-card" style="grid-column: 1 / -1;">
-                    <h3><i class="fas fa-file-medical"></i> Materials Manager</h3>
-                    <div class="admin-form-row">
-                        <select id="adminSubjectSelect" class="lang-select">
-                            <option value="math2">رياضيات 2</option>
-                            <option value="prog2">برمجة 2</option>
-                            <option value="discrete">تراكيب محددة</option>
-                            <option value="social">قضايا اجتماعية</option>
-                            <option value="reports">كتابة التقارير</option>
-                            <option value="datacom">تراسل البيانات</option>
-                        </select>
-                        <select id="adminMaterialType" class="lang-select">
-                            <option value="chapter">Chapter (File)</option>
-                            <option value="playlist">Playlist (Video)</option>
-                            <option value="task">Task (Assignment)</option>
-                        </select>
+                    <!-- Materials Tab -->
+                    <div id="tab-materials" class="admin-tab" style="display: none;">
+                        <div class="admin-card">
+                            <h3><i class="fas fa-folder-plus"></i> Source Material Injector</h3>
+                            <div class="admin-form-row">
+                                <div class="admin-input-group">
+                                    <label>Target Subject</label>
+                                    <select id="adminSubjectSelect">
+                                        <option value="math2">رياضيات 2</option>
+                                        <option value="prog2">برمجة 2</option>
+                                        <option value="discrete">تراكيب محددة</option>
+                                        <option value="social">قضايا اجتماعية</option>
+                                        <option value="reports">كتابة التقارير</option>
+                                        <option value="datacom">تراسل البيانات</option>
+                                    </select>
+                                </div>
+                                <div class="admin-input-group">
+                                    <label>Resource Category</label>
+                                    <select id="adminMaterialType">
+                                        <option value="chapter">Chapter (PDF/File)</option>
+                                        <option value="playlist">Playlist (Video Link)</option>
+                                        <option value="task">Task (Internal Assignment)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="admin-input-group">
+                                <label>Asset Title</label>
+                                <input type="text" id="adminMatName" placeholder="e.g. Chapter 4: Network Protocols">
+                            </div>
+                            <div class="admin-input-group">
+                                <label>Payload URL / File Link</label>
+                                <input type="text" id="adminMatUrl" placeholder="Direct access link...">
+                            </div>
+                            <div class="admin-input-group">
+                                <label>Task Parameters (JSON/Text)</label>
+                                <textarea id="adminMatContent" placeholder="Define assignment scope or code snippet..."
+                                    rows="3"></textarea>
+                            </div>
+                            <button class="btn btn-secondary" onclick="addMaterialToSubject()"
+                                style="width: 100%;">Authorize Injection</button>
+                        </div>
+                        <div class="admin-card" style="margin-top: 2rem;">
+                            <h3><i class="fas fa-database"></i> Resource Repositories</h3>
+                            <div id="adminMaterialsList" class="admin-list"></div>
+                        </div>
                     </div>
-                    <div class="input-group" style="margin-top: 15px;">
-                        <input type="text" id="adminMatName" placeholder="Name (e.g. Chapter 1 / Lecture Title)">
-                        <input type="text" id="adminMatUrl" placeholder="URL / File Link (Optional)">
-                        <textarea id="adminMatContent" placeholder="Task Description / Code (For Tasks only)"
-                            rows="3"></textarea>
-                    </div>
-                    <button class="btn btn-secondary" onclick="addMaterialToSubject()"
-                        style="width: 100%; margin-top: 1rem;">Add to Subject</button>
 
-                    <div id="adminMaterialsList" class="admin-list"
-                        style="margin-top: 2rem; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 1rem;">
-                        <!-- Materials grouped by subject -->
-                    </div>
-                </div>
-
-                <!-- STUDENT GRADES MANAGER -->
-                <div class="admin-card glass-card" style="grid-column: 1 / -1;">
-                    <h3><i class="fas fa-graduation-cap"></i> Student Grades Manager</h3>
-                    <div class="admin-form-row">
-                        <input type="text" id="adminStudentId" placeholder="Student ID (e.g. 2021001)">
-                        <input type="text" id="adminStudentName" placeholder="Full Name">
-                        <input type="text" id="adminStudentGPA" placeholder="GPA (e.g. 3.8)">
-                    </div>
-                    <div class="input-group" style="margin-top: 1rem;">
-                        <textarea id="adminStudentGradesJSON"
-                            placeholder='Grades JSON (e.g. [{"subject":"Math","degree":"95","grade":"A+","points":"4.0"}])'
-                            rows="3"></textarea>
-                    </div>
-                    <button class="btn btn-primary" onclick="addStudentGrade()"
-                        style="width: 100%; margin-top: 1rem;">Save Student Record</button>
-
-                    <div id="adminGradesList" class="admin-list"
-                        style="margin-top: 2rem; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 1rem;">
-                        <!-- List of students with delete buttons -->
+                    <!-- Grades Tab -->
+                    <div id="tab-grades" class="admin-tab" style="display: none;">
+                        <div class="admin-card">
+                            <h3><i class="fas fa-user-shield"></i> Academic Record Management</h3>
+                            <div class="admin-form-row">
+                                <div class="admin-input-group">
+                                    <label>Student UID</label>
+                                    <input type="text" id="adminStudentId" placeholder="2021001">
+                                </div>
+                                <div class="admin-input-group">
+                                    <label>Legal Name</label>
+                                    <input type="text" id="adminStudentName" placeholder="Ahmed Gamal">
+                                </div>
+                                <div class="admin-input-group">
+                                    <label>Current GPA</label>
+                                    <input type="text" id="adminStudentGPA" placeholder="3.8">
+                                </div>
+                            </div>
+                            <div class="admin-input-group">
+                                <label>Transcript Data (JSON)</label>
+                                <textarea id="adminStudentGradesJSON"
+                                    placeholder='[{"subject":"Math","degree":"95","grade":"A+","points":"4.0"}]'
+                                    rows="3"></textarea>
+                            </div>
+                            <button class="btn btn-primary" onclick="addStudentGrade()" style="width: 100%;">Commit
+                                Record</button>
+                        </div>
+                        <div class="admin-card" style="margin-top: 2rem;">
+                            <h3><i class="fas fa-users-cog"></i> Student Directory</h3>
+                            <div id="adminGradesList" class="admin-list"></div>
+                        </div>
                     </div>
                 </div>
             </div>

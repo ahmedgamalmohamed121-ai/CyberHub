@@ -1225,6 +1225,22 @@ window.submitAdminLogin = async () => {
     }
 };
 
+// --- ADMIN UX LOGIC ---
+window.switchAdminTab = (tabId) => {
+    // Hide all tabs
+    document.querySelectorAll('.admin-tab').forEach(t => t.style.display = 'none');
+    // Deactivate all nav items
+    document.querySelectorAll('.admin-nav-item').forEach(i => i.classList.remove('active'));
+
+    // Show target tab
+    document.getElementById(`tab-${tabId}`).style.display = 'block';
+    // Activate target nav item
+    const navItems = document.querySelectorAll('.admin-nav-item');
+    if (tabId === 'announcements') navItems[0].classList.add('active');
+    if (tabId === 'materials') navItems[1].classList.add('active');
+    if (tabId === 'grades') navItems[2].classList.add('active');
+};
+
 async function loadAdminAnnouncements() {
     const list = document.getElementById('adminAnnouncementList');
     try {
@@ -1233,11 +1249,11 @@ async function loadAdminAnnouncements() {
         list.innerHTML = announcements.map(a => `
             <div class="admin-item">
                 <div class="item-text">${escapeHTML(a.text)}</div>
-                <button class="btn-delete" onclick="deleteAnnouncement('${a.id}')"><i class="fas fa-trash"></i></button>
+                <button class="btn-delete-icon" onclick="deleteAnnouncement('${a.id}')"><i class="fas fa-trash"></i></button>
             </div>
-        `).join('') || '<p style="opacity:0.5;">No announcements.</p>';
+        `).join('') || '<p style="opacity:0.5;">No broadcast transmissions found.</p>';
     } catch (err) {
-        list.innerHTML = "<p>Error loading.</p>";
+        list.innerHTML = "<p>Error synchronization failed.</p>";
     }
 }
 
