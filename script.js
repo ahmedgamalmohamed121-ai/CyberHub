@@ -18,9 +18,19 @@ let RAPIDAPI_KEY = localStorage.getItem('judge0_api_key') || "";
 let JUDGE0_BASE_URL = localStorage.getItem('judge0_base_url') || "https://ce.judge0.com";
 const RAPIDAPI_HOST = new URL(JUDGE0_BASE_URL).host;
 
-const MONACO_MODES = {
-    python: 'python', javascript: 'javascript', cpp: 'cpp', c: 'c', java: 'java', php: 'php', sql: 'sql'
-};
+const MONACO_MODES = { 'python': 'python', 'javascript': 'javascript', 'cpp': 'cpp', 'c': 'c', 'java': 'java', 'php': 'php', 'sql': 'sql' };
+
+// Security: Escape HTML to prevent XSS
+function escapeHTML(str) {
+    if (!str) return "";
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
 
 require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs' } });
 
@@ -116,8 +126,8 @@ function setupEventListeners() {
     document.getElementById('btnAr').addEventListener('click', () => { currentUIText = 'ar'; updateUILanguage(); analyzeErrors("", editor.getValue()); });
     document.getElementById('btnEn').addEventListener('click', () => { currentUIText = 'en'; updateUILanguage(); analyzeErrors("", editor.getValue()); });
     clearOutput.addEventListener('click', () => {
-        document.getElementById('outputConsole').innerHTML = ">";
-        document.getElementById('errorCount').innerText = "0";
+        document.getElementById('outputConsole').textContent = ">";
+        document.getElementById('errorCount').textContent = "0";
         document.getElementById('smartFixContainer').innerHTML = `<div class="empty-state">✅ Healthy Code!</div>`;
     });
 
@@ -273,13 +283,17 @@ function runAdvancedSimulation(code, lang) {
     }
 }
 
+// Harden safeEvalMath to prevent arbitrary JS execution
 function safeEvalMath(expr) {
     try {
-        // Clean expression
-        let clean = expr.replace(/[fLd]$/i, '').replace(/f/g, '');
-        // Support common C++ operators if they leak
-        clean = clean.replace(/endl/g, '""');
-        return Function(`"use strict"; return (${clean})`)();
+        if (!expr) return "";
+        // Only allow math-related characters, numbers, and basic operators
+        const sanitized = String(expr).replace(/[fLd]$/i, '').replace(/f/g, '').trim();
+        if (/[^0-9.+\-*/% ()\s&|^<>!]/.test(sanitized)) {
+            // If it contains non-math chars, return as literal string to avoid Function() abuse
+            return sanitized;
+        }
+        return Function(`"use strict"; return (${sanitized})`)();
     } catch (e) {
         return expr;
     }
@@ -342,7 +356,7 @@ async function initPyodide() {
         outputConsole.innerHTML += `<span class="success">> Python Engine Ready!</span><br>`;
         return true;
     } catch (e) {
-        outputConsole.innerHTML += `<span class="error">> Python Load Fail: ${e.message}</span><br>`;
+        outputConsole.innerHTML += `<span class="error">> Python Load Fail: ${escapeHTML(e.message)}</span><br>`;
         isPyodideLoading = false; return false;
     }
 }
@@ -375,96 +389,109 @@ function runLocalJS(code) {
     }
 }
 
+let isExecuting = false;
+
 async function executeCode() {
+    if (isExecuting) return;
     const code = editor.getValue();
     const runBtn = document.getElementById('runBtn');
     const outputConsole = document.getElementById('outputConsole');
     if (!code.trim()) return;
 
+    isExecuting = true;
     runBtn.disabled = true;
     const originalBtnHTML = runBtn.innerHTML;
     runBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> RUNNING...';
 
-    // Run initial analysis
+    // Clear previous output
+    outputConsole.textContent = "> Running...";
     analyzeErrors("", code);
 
     try {
-        // --- 2. LOCAL EXECUTION (Unchanged) ---
-        if (currentLanguage === 'javascript') {
-            const result = runLocalJS(code);
-            outputConsole.innerHTML = `> ${result.stdout.replace(/\n/g, '<br>') || '<span class="info">(No output)</span>'}`;
-            if (result.stderr) {
-                outputConsole.innerHTML += `<br><span class="error">${result.stderr}</span>`;
-                const isRealError = /error|exception|referenceerror|syntaxerror|typeerror/i.test(result.stderr);
-                if (isRealError) analyzeErrors(result.stderr, code);
-                else document.getElementById('smartFixContainer').innerHTML = `<div class="empty-state">✅ Healthy Code! (Minor info in stderr)</div>`;
+        // --- 1. LOCAL EXECUTION (JS/Python) ---
+        if (currentLanguage === 'javascript' || currentLanguage === 'python') {
+            let result;
+            if (currentLanguage === 'javascript') {
+                result = runLocalJS(code);
             } else {
-                document.getElementById('smartFixContainer').innerHTML = `<div class="empty-state">✅ Healthy Code! No errors found.</div>`;
+                if (!pyodide && !isPyodideLoading) runBtn.innerHTML = '<i class="fas fa-cog fa-spin"></i> LOADING...';
+                result = await runLocalPython(code);
             }
+
+            displayExecutionResult(result);
             return;
         }
 
-        if (currentLanguage === 'python') {
-            if (!pyodide && !isPyodideLoading) runBtn.innerHTML = '<i class="fas fa-cog fa-spin"></i> LOADING ENGINE...';
-            const result = await runLocalPython(code);
-            outputConsole.innerHTML = `> ${result.stdout.replace(/\n/g, '<br>') || '<span class="info">(No output)</span>'}`;
-            if (result.stderr) {
-                outputConsole.innerHTML += `<br><span class="error">${result.stderr}</span>`;
-                // Only analyze if it actually looks like an error
-                const isRealError = /error|exception|traceback|failed/i.test(result.stderr);
-                if (isRealError) analyzeErrors(result.stderr, code);
-                else document.getElementById('smartFixContainer').innerHTML = `<div class="empty-state">✅ Healthy Code! (Minor info in stderr)</div>`;
-            } else {
-                document.getElementById('smartFixContainer').innerHTML = `<div class="empty-state">✅ Healthy Code! No errors found.</div>`;
-            }
-            return;
-        }
-
-        // --- 3. DIRECT CLOUD EXECUTION (Judge0) ---
+        // --- 2. CLOUD EXECUTION (Judge0) ---
         const url = `${JUDGE0_BASE_URL}/submissions?base64_encoded=false&wait=true`;
         const headers = { 'content-type': 'application/json' };
         if (RAPIDAPI_KEY) {
             headers['x-rapidapi-key'] = RAPIDAPI_KEY;
-            headers['x-rapidapi-host'] = "judge0-ce.p.rapidapi.com";
+            headers['x-rapidapi-host'] = RAPIDAPI_HOST;
         }
 
         const response = await fetch(`${url}&request_id=${Date.now()}`, {
             method: 'POST',
-            headers: {
-                ...headers,
-                'Cache-Control': 'no-cache',
-                'Pragma': 'no-cache'
-            },
+            headers: { ...headers, 'Cache-Control': 'no-cache' },
             body: JSON.stringify({
                 language_id: LANGUAGE_IDS[currentLanguage],
                 source_code: code
             })
         });
 
-        if (!response.ok) throw new Error("Cloud Error");
+        if (!response.ok) throw new Error(`Fetch failed: ${response.statusText}`);
         const result = await response.json();
-
-        let html = "";
-        if (result.compile_output) html += `<span class="error">${result.compile_output}</span>\n`;
-        if (result.stdout) html += `<span class="output">${result.stdout}</span>\n`;
-        if (result.stderr) html += `<span class="error">${result.stderr}</span>\n`;
-
-        outputConsole.innerHTML = `> ${html.replace(/\n/g, '<br>') || '<span class="info">(No output)</span>'}`;
-
-        // Trigger Smart Fix ONLY if there's a real error from the compiler
-        if (result.compile_output || result.stderr) {
-            analyzeErrors(result.compile_output || result.stderr, code);
-        } else {
-            document.getElementById('smartFixContainer').innerHTML = `<div class="empty-state">✅ Healthy Code! No errors found.</div>`;
-        }
+        displayExecutionResult(result);
 
     } catch (err) {
         console.error("Execution Error:", err);
-        outputConsole.innerHTML += `<br><span class="error">> ❌ Server Error. Falling back to simulation...</span>`;
+        const errorLine = document.createElement('div');
+        errorLine.className = 'error';
+        errorLine.textContent = `> ❌ Server Error. Falling back to local simulation...`;
+        outputConsole.appendChild(errorLine);
         await executeCodeWithFallback(code);
     } finally {
+        isExecuting = false;
         runBtn.disabled = false;
         runBtn.innerHTML = originalBtnHTML;
+    }
+}
+
+// Helper to safely display results across all systems
+function displayExecutionResult(result) {
+    const outputConsole = document.getElementById('outputConsole');
+    const smartFixContainer = document.getElementById('smartFixContainer');
+    const code = editor.getValue();
+
+    outputConsole.textContent = "> ";
+
+    const appendPart = (text, className) => {
+        if (!text) return;
+        const span = document.createElement('span');
+        span.className = className;
+        span.textContent = text;
+        outputConsole.appendChild(span);
+        outputConsole.appendChild(document.createElement('br'));
+    };
+
+    if (result.compile_output) appendPart(result.compile_output, 'error');
+    if (result.stdout) appendPart(result.stdout, 'output');
+    if (result.stderr) appendPart(result.stderr, 'error');
+
+    if (!result.stdout && !result.stderr && !result.compile_output) {
+        const info = document.createElement('span');
+        info.className = 'info';
+        info.textContent = '(No output)';
+        outputConsole.appendChild(info);
+    }
+
+    // Trigger Smart Fix
+    if (result.compile_output || result.stderr) {
+        const isRealError = /error|exception|referenceerror|syntaxerror|typeerror|traceback|failed/i.test(result.compile_output || result.stderr);
+        if (isRealError) analyzeErrors(result.compile_output || result.stderr, code);
+        else smartFixContainer.innerHTML = `<div class="empty-state">✅ Healthy Code! (Minor info in stderr)</div>`;
+    } else {
+        smartFixContainer.innerHTML = `<div class="empty-state">✅ Healthy Code! No errors found.</div>`;
     }
 }
 
@@ -475,9 +502,19 @@ async function executeCodeWithFallback(code) {
     else if (currentLanguage === 'sql') result = runSqlSimulation(code);
 
     if (result) {
-        let html = "";
-        if (result.stdout) html += `<span class="output">${result.stdout}</span>\n`;
-        document.getElementById('outputConsole').innerHTML += `<br>> <span class="info">🛡️ Fallback Simulation:</span><br>${html.replace(/\n/g, '<br>')}`;
+        const outputConsole = document.getElementById('outputConsole');
+        const header = document.createElement('div');
+        header.className = 'info';
+        header.style.marginTop = '10px';
+        header.textContent = `🛡️ Local Fallback Simulation:`;
+        outputConsole.appendChild(header);
+
+        if (result.stdout) {
+            const span = document.createElement('span');
+            span.className = 'output';
+            span.textContent = result.stdout;
+            outputConsole.appendChild(span);
+        }
     }
 }
 
@@ -485,7 +522,7 @@ function analyzeErrors(rawError, code) {
     const smartContainer = document.getElementById('smartFixContainer');
     const findings = runRuleEngine(rawError, code, currentLanguage);
     const realErrors = findings.filter(f => f.type !== 'Structure Warning'); // Optional: don't count warnings in badge
-    document.getElementById('errorCount').innerText = realErrors.length;
+    document.getElementById('errorCount').textContent = realErrors.length;
     smartContainer.innerHTML = "";
     if (findings.length > 0) {
         findings.forEach(f => smartContainer.appendChild(createFixCard(f)));
@@ -671,15 +708,15 @@ function getLineFromPos(code, pos) {
 function createFixCard(f) {
     const card = document.createElement('div'); card.className = `fix-card ${currentUIText === 'ar' ? 'ar' : ''}`;
     const h = document.createElement('div'); h.className = 'fix-header';
-    h.innerHTML = `<div class="fix-title"><i class="fas fa-exclamation-triangle"></i> ${f.type}</div><div class="fix-location">Line ${f.line}</div>`;
+    h.innerHTML = `<div class="fix-title"><i class="fas fa-exclamation-triangle"></i> ${escapeHTML(f.type)}</div><div class="fix-location">Line ${escapeHTML(f.line)}</div>`;
     const e = document.createElement('div'); e.className = 'fix-explanation';
-    e.innerHTML = `<div class="main-explanation">${currentUIText === 'ar' ? f.explanation_ar : f.explanation_en}</div>`;
+    e.innerHTML = `<div class="main-explanation">${currentUIText === 'ar' ? escapeHTML(f.explanation_ar) : escapeHTML(f.explanation_en)}</div>`;
 
     // Always show the technical message if we have translating it, or if it's a notification
     if (f.explanation_en && currentUIText === 'ar') {
         const isTranslated = f.explanation_ar.includes("المشكلة:");
         if (isTranslated || f.type === 'Compiler Notification' || f.line === '?') {
-            e.innerHTML += `<div class="technical-msg">Technical Error (English): ${f.explanation_en}</div>`;
+            e.innerHTML += `<div class="technical-msg">Technical Error (English): ${escapeHTML(f.explanation_en)}</div>`;
         }
     }
 
@@ -691,11 +728,11 @@ function createFixCard(f) {
 
     if (f.suggestion) {
         const s = document.createElement('div'); s.className = 'fix-suggestion';
-        s.innerHTML = `<code>${f.suggestion}</code>`;
+        s.innerHTML = `<code>${escapeHTML(f.suggestion)}</code>`;
 
         const tip = document.createElement('div');
         tip.className = 'fix-tip';
-        tip.innerHTML = `<i class="fas fa-lightbulb"></i> ${currentUIText === 'ar' ? 'يمكنك استخدام الاقتراح أعلاه لتصحيح الخطأ.' : 'You can use the suggestion above to fix the error.'}`;
+        tip.innerHTML = `<i class="fas fa-lightbulb"></i> ${currentUIText === 'ar' ? escapeHTML(f.tip_ar) : 'You can use the suggestion above to fix the error.'}`;
 
         card.appendChild(s);
         card.appendChild(tip);
@@ -731,10 +768,6 @@ function toggleTheme() {
     if (editor) monaco.editor.setTheme(isLight ? 'vs' : 'vs-dark');
 }
 
-function showToast(msg) {
-    const t = document.createElement('div'); t.className = 'toast-notification success'; t.innerHTML = `<span>${msg}</span>`;
-    document.body.appendChild(t); setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 500); }, 3000);
-}
 
 window.showSection = showSection; window.toggleTheme = toggleTheme; window.executeCode = executeCode;
 
@@ -833,16 +866,16 @@ window.searchGrades = () => {
     const student = MOCK_STUDENTS.find(s => s.id === query || s.name.toLowerCase().includes(query.toLowerCase()));
 
     if (student) {
-        document.getElementById('resStudentName').innerText = student.name;
-        document.getElementById('resStudentID').innerText = `ID: ${student.id}`;
-        document.getElementById('resGPA').innerText = student.gpa;
+        document.getElementById('resStudentName').textContent = student.name;
+        document.getElementById('resStudentID').textContent = `ID: ${student.id}`;
+        document.getElementById('resGPA').textContent = student.gpa;
 
         tableBody.innerHTML = student.grades.map(g => `
             <tr>
-                <td>${g.subject}</td>
-                <td>${g.degree}</td>
-                <td class="grade-${g.grade.charAt(0)}">${g.grade}</td>
-                <td>${g.points}</td>
+                <td>${escapeHTML(g.subject)}</td>
+                <td>${escapeHTML(g.degree)}</td>
+                <td class="grade-${escapeHTML(g.grade.charAt(0))}">${escapeHTML(g.grade)}</td>
+                <td>${escapeHTML(g.points)}</td>
             </tr>
         `).join('');
 
@@ -901,8 +934,8 @@ window.openSubject = (id) => {
         if (data.playlists && data.playlists.length > 0) {
             playlistList.innerHTML = data.playlists.map((pl, index) => `
                 <li class="resource-item">
-                    <span><i class="fab fa-youtube"></i> ${pl.name}</span>
-                    <button class="btn-xs watch" onclick="window.open('${pl.url}', '_blank')">Watch</button>
+                    <span><i class="fab fa-youtube"></i> ${escapeHTML(pl.name)}</span>
+                    <button class="btn-xs watch" onclick="window.open('${escapeHTML(pl.url)}', '_blank')">Watch</button>
                 </li>
                 ${index < data.playlists.length - 1 ? '<div class="playlist-separator">OR</div>' : ''}
             `).join('');
@@ -916,8 +949,8 @@ window.openSubject = (id) => {
     if (chaptersList) {
         chaptersList.innerHTML = data.chapters.map(ch => `
             <li class="resource-item">
-                <span><i class="fas fa-folder-open"></i> ${ch.name}</span>
-                <button class="btn-xs download" onclick="${ch.file ? `window.open('${ch.file}', '_blank')` : "alert('قريباً.. الملف قيد الرفع')"}">Open</button>
+                <span><i class="fas fa-folder-open"></i> ${escapeHTML(ch.name)}</span>
+                <button class="btn-xs download" onclick="${ch.file ? `window.open('${escapeHTML(ch.file)}', '_blank')` : "alert('قريباً.. الملف قيد الرفع')"}">Open</button>
             </li>
         `).join('');
     }
@@ -930,15 +963,15 @@ window.openSubject = (id) => {
                 <li class="task-card">
                     <div class="task-header" onclick="toggleTask(${index})" style="cursor: pointer;">
                         <div class="task-title">
-                            <i class="fas fa-terminal"></i> ${task.name}
+                            <i class="fas fa-terminal"></i> ${escapeHTML(task.name)}
                         </div>
                         <div class="task-actions">
                             <i id="taskChevron-${index}" class="fas fa-chevron-down task-chevron"></i>
                             ${task.content ?
-                    `<button class="btn-copy-alt" onclick="event.stopPropagation(); copyToClipboard(\`${task.content}\`)">
+                    `<button class="btn-copy-alt" onclick="event.stopPropagation(); copyToClipboard(\`${escapeHTML(task.content)}\`)">
                                     <i class="fas fa-clone"></i> Copy
                                 </button>` :
-                    `<button class="btn-xs download" onclick="event.stopPropagation(); window.open('${task.file}', '_blank')">
+                    `<button class="btn-xs download" onclick="event.stopPropagation(); window.open('${escapeHTML(task.file)}', '_blank')">
                                     <i class="fas fa-file-download"></i> Download
                                 </button>`
                 }
@@ -946,7 +979,7 @@ window.openSubject = (id) => {
                     </div>
                     ${task.content ? `
                         <div id="taskContent-${index}" class="task-content-box" style="display: none;">
-                            ${task.content}
+                            ${escapeHTML(task.content)}
                         </div>
                     ` : ''}
                 </li>
@@ -981,7 +1014,8 @@ window.copyToClipboard = (text) => {
 function showToast(message) {
     const toast = document.createElement('div');
     toast.className = 'toast-notification';
-    toast.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+    toast.innerHTML = `<i class="fas fa-check-circle"></i> <span></span>`;
+    toast.querySelector('span').textContent = message;
     document.body.appendChild(toast);
     setTimeout(() => {
         toast.classList.add('fade-out');
