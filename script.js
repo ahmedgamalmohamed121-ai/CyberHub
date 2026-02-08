@@ -1063,16 +1063,21 @@ window.onclick = (event) => {
 };
 
 // --- ANNOUNCEMENTS LOGIC ---
-const socket = io();
+let socket;
+try {
+    if (typeof io !== 'undefined') socket = io();
+} catch (e) { console.warn("Socket.io not loaded"); }
 
-socket.on('new_announcement', (announcement) => {
-    addAnnouncementToFeed(announcement, true);
-    if (document.getElementById('announcements').style.display === 'block') {
-        // Already on page
-    } else {
-        showToast("New Announcement! 📢");
-    }
-});
+if (socket) {
+    socket.on('new_announcement', (announcement) => {
+        addAnnouncementToFeed(announcement, true);
+        if (document.getElementById('announcements').style.display === 'block') {
+            // Already on page
+        } else {
+            showToast("New Announcement! 📢");
+        }
+    });
+}
 
 async function loadAnnouncements() {
     const feed = document.getElementById('announcementFeed');
@@ -1268,9 +1273,9 @@ window.deleteAnnouncement = async (id) => {
 const originalShowSection = window.showSection;
 window.showSection = (id) => {
     if (id === 'admin' && !adminToken) {
-        openAdminLogin();
+        window.openAdminLogin();
         return;
     }
-    originalShowSection(id);
+    if (typeof originalShowSection === 'function') originalShowSection(id);
     if (id === 'admin') loadAdminAnnouncements();
 };
