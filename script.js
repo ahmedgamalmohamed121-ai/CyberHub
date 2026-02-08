@@ -378,15 +378,22 @@ async function executeCode() {
     const originalBtnHTML = runBtn.innerHTML;
     runBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> RUNNING...';
 
-    // 1. Run Static Analysis (Smart Fix)
-    analyzeErrors("", code);
+    // Clear results before new run
+    outputConsole.innerHTML = "";
+    document.getElementById('smartFixContainer').innerHTML = `<div class="empty-state">⏳ Waiting for Compiler...</div>`;
+    document.getElementById('errorCount').innerText = "0";
 
     try {
         // --- 2. LOCAL EXECUTION (Unchanged) ---
         if (currentLanguage === 'javascript') {
             const result = runLocalJS(code);
             outputConsole.innerHTML = `> ${result.stdout.replace(/\n/g, '<br>') || '<span class="info">(No output)</span>'}`;
-            if (result.stderr) outputConsole.innerHTML += `<br><span class="error">${result.stderr}</span>`;
+            if (result.stderr) {
+                outputConsole.innerHTML += `<br><span class="error">${result.stderr}</span>`;
+                analyzeErrors(result.stderr, code);
+            } else {
+                document.getElementById('smartFixContainer').innerHTML = `<div class="empty-state">✅ Healthy Code! No errors found.</div>`;
+            }
             return;
         }
 
@@ -394,7 +401,12 @@ async function executeCode() {
             if (!pyodide && !isPyodideLoading) runBtn.innerHTML = '<i class="fas fa-cog fa-spin"></i> LOADING ENGINE...';
             const result = await runLocalPython(code);
             outputConsole.innerHTML = `> ${result.stdout.replace(/\n/g, '<br>') || '<span class="info">(No output)</span>'}`;
-            if (result.stderr) outputConsole.innerHTML += `<br><span class="error">${result.stderr}</span>`;
+            if (result.stderr) {
+                outputConsole.innerHTML += `<br><span class="error">${result.stderr}</span>`;
+                analyzeErrors(result.stderr, code);
+            } else {
+                document.getElementById('smartFixContainer').innerHTML = `<div class="empty-state">✅ Healthy Code! No errors found.</div>`;
+            }
             return;
         }
 
@@ -406,9 +418,13 @@ async function executeCode() {
             headers['x-rapidapi-host'] = "judge0-ce.p.rapidapi.com";
         }
 
-        const response = await fetch(url, {
+        const response = await fetch(`${url}&request_id=${Date.now()}`, {
             method: 'POST',
-            headers: headers,
+            headers: {
+                ...headers,
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache'
+            },
             body: JSON.stringify({
                 language_id: LANGUAGE_IDS[currentLanguage],
                 source_code: code
@@ -424,7 +440,13 @@ async function executeCode() {
         if (result.stderr) html += `<span class="error">${result.stderr}</span>\n`;
 
         outputConsole.innerHTML = `> ${html.replace(/\n/g, '<br>') || '<span class="info">(No output)</span>'}`;
-        analyzeErrors(result.compile_output || result.stderr || "", code);
+
+        // Trigger Smart Fix ONLY if there's a real error from the compiler
+        if (result.compile_output || result.stderr) {
+            analyzeErrors(result.compile_output || result.stderr, code);
+        } else {
+            document.getElementById('smartFixContainer').innerHTML = `<div class="empty-state">✅ Healthy Code! No errors found.</div>`;
+        }
 
     } catch (err) {
         console.error("Execution Error:", err);
@@ -446,7 +468,6 @@ async function executeCodeWithFallback(code) {
         let html = "";
         if (result.stdout) html += `<span class="output">${result.stdout}</span>\n`;
         document.getElementById('outputConsole').innerHTML += `<br>> <span class="info">🛡️ Fallback Simulation:</span><br>${html.replace(/\n/g, '<br>')}`;
-        analyzeErrors("", code);
     }
 }
 
@@ -466,38 +487,36 @@ function runRuleEngine(err, code, lang) {
     const results = [];
     const lines = code.split('\n');
 
-    // --- 1. PARSE SERVER ERRORS (High Priority) ---
+    // --- 1. PARSE COMPILER ERRORS (The Absolute Source of Truth) ---
     if (err) {
-        // C++/C: main.cpp:5:10: error: expected ';' before 'return'
-        // Java: Main.java:5: error: ';' expected
-        const serverErrorRegex = /(?:main\.\w+|Main|File "[^"]+", line)\s*:?(\d+)/i;
-        const match = err.match(serverErrorRegex);
-        if (match) {
-            const lineNum = parseInt(match[1]);
-            let cleanMsg = err.split('\n')[0].replace(/.*error:\s*/i, '').trim();
+        const errorLines = err.split('\n');
+        // Look for line numbers in various compiler formats
+        const serverErrorRegex = /:(\d+):/i; // Standard gcc/clang Main.cpp:5:10
 
-            // Translate common server errors
-            let ar_desc = cleanMsg;
-            if (cleanMsg.includes("expected ';'")) ar_desc = "ناقصك سيمي كولون (;) في السطر ده أو اللي قبله.";
-            else if (cleanMsg.includes("was not declared")) ar_desc = "المتغير ده مش متعرف، اتأكد من كتابة اسمه صح أو عرفه الأول.";
-            else if (cleanMsg.includes("expected '}'")) ar_desc = "ناقصك قوس إغلاق } في الكود.";
-            else if (cleanMsg.includes("expected identifier")) ar_desc = "في حاجة غلط في تسمية المتغيرات أو الدوال هنا.";
+        errorLines.forEach(line => {
+            const match = line.match(serverErrorRegex);
+            if (match && (line.toLowerCase().includes('error') || line.toLowerCase().includes('fail'))) {
+                const lineNum = parseInt(match[1]);
+                let cleanMsg = line.substring(line.indexOf('error') + 5).replace(/^[:\s]*/, '').trim();
 
-            results.push({
-                type: 'Compiler Error',
-                line: lineNum,
-                part: lines[lineNum - 1] || "Error",
-                explanation_ar: `السيرفر لقى خطأ: ${ar_desc}`,
-                explanation_en: `Compiler found: ${cleanMsg}`,
-                suggestion: "",
-                tip_ar: "بص على السطر ده كويس، السيرفر بيقول إن فيه مشكلة هنا."
-            });
-        }
+                results.push({
+                    type: 'Compiler Error',
+                    line: lineNum,
+                    part: lines[lineNum - 1] || "Error",
+                    explanation_ar: `المترجم (Compiler) لقى خطأ: ${cleanMsg}`,
+                    explanation_en: `Compiler found: ${cleanMsg}`,
+                    suggestion: "",
+                    tip_ar: "الذكاء الاصطناعي يقدر يساعدك تفهم الخطأ ده لو دوست على 'شرح بالذكاء الاصطناعي'."
+                });
+            }
+        });
+
+        // If we found compiler errors, return them immediately and SKIP static analysis
+        if (results.length > 0) return results;
     }
 
-    // --- 2. IMPROVED STATIC ANALYSIS (Avoid False Positives) ---
-
-    // Check if code is actually correct (minimal false positives)
+    // --- 2. OPTIONAL STATIC ANALYSIS (Only if no compiler error) ---
+    if (err) return []; // If there was an error but regex missed it, don't fallback to magic guesses.
     const hasMain = code.includes('main') || code.includes('function') || code.includes('<?php') || lang === 'python' || lang === 'javascript';
     if (!hasMain && code.trim().length > 50) {
         results.push({
@@ -649,11 +668,15 @@ async function askAIFix(f, card) {
     card.appendChild(feedback);
 
     try {
-        const prompt = `Act as an expert programming tutor. Language: ${currentLanguage}. Error Type: ${f.type}. Line: ${f.line}. Snippet: ${f.part}. Explanation: ${f.explanation_en}. Provide a concise fix in ${currentUIText === 'ar' ? 'Arabic' : 'English'}. Include code example.`;
+        const prompt = `Act as an expert programming tutor. The compiler/engine reported this error in ${currentLanguage}:
+        "${f.explanation_en}" at line ${f.line}.
+        Code snippet on that line: ${f.part}
+        
+        Explain why this happened and how to fix it in ${currentUIText === 'ar' ? 'Arabic' : 'English'}. Keep it concise and educational (under 100 words). Use markdown.`;
 
         const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyB9RzOyfKA16uBnh4sZv3hpJp6fZUrhJiI', {
             method: 'POST',
-            
+
             body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
         });
 
