@@ -382,7 +382,7 @@ async function executeCode() {
     analyzeErrors("", code);
 
     try {
-        // --- 2. FAST LOCAL EXECUTION ---
+        // --- 2. LOCAL EXECUTION (Unchanged) ---
         if (currentLanguage === 'javascript') {
             const result = runLocalJS(code);
             outputConsole.innerHTML = `> ${result.stdout.replace(/\n/g, '<br>') || '<span class="info">(No output)</span>'}`;
@@ -391,55 +391,34 @@ async function executeCode() {
         }
 
         if (currentLanguage === 'python') {
-            if (!pyodide && !isPyodideLoading) {
-                runBtn.innerHTML = '<i class="fas fa-cog fa-spin"></i> LOADING ENGINE...';
-            }
+            if (!pyodide && !isPyodideLoading) runBtn.innerHTML = '<i class="fas fa-cog fa-spin"></i> LOADING ENGINE...';
             const result = await runLocalPython(code);
             outputConsole.innerHTML = `> ${result.stdout.replace(/\n/g, '<br>') || '<span class="info">(No output)</span>'}`;
             if (result.stderr) outputConsole.innerHTML += `<br><span class="error">${result.stderr}</span>`;
             return;
         }
 
-        // --- 3. SERVER EXECUTION (For C++, Java, etc.) ---
-        const url = `${JUDGE0_BASE_URL}/submissions?base64_encoded=false&wait=true`;
-        const headers = { 'content-type': 'application/json' };
-        if (RAPIDAPI_KEY) {
-            headers['x-rapidapi-key'] = RAPIDAPI_KEY;
-            headers['x-rapidapi-host'] = RAPIDAPI_HOST;
-        }
-
-        // Add 10s timeout
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000);
-
-        const response = await fetch(url, {
+        // --- 3. SERVER-SIDE EXECUTION (Proxy) ---
+        const response = await fetch('/api/execute', {
             method: 'POST',
-            headers: headers,
-            body: JSON.stringify({
-                language_id: LANGUAGE_IDS[currentLanguage],
-                source_code: code
-            }),
-            signal: controller.signal
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ language: currentLanguage, code: code })
         });
-        clearTimeout(timeoutId);
 
-        if (!response.ok) throw new Error(`Server Response: ${response.statusText}`);
+        if (!response.ok) throw new Error("Server Error");
         const result = await response.json();
 
         let html = "";
-        if (result?.compile_output) html += `<span class="error">${result.compile_output}</span>\n`;
-        if (result?.stdout) html += `<span class="output">${result.stdout}</span>\n`;
-        if (result?.stderr) html += `<span class="error">${result.stderr}</span>\n`;
+        if (result.compile_output) html += `<span class="error">${result.compile_output}</span>\n`;
+        if (result.stdout) html += `<span class="output">${result.stdout}</span>\n`;
+        if (result.stderr) html += `<span class="error">${result.stderr}</span>\n`;
 
         outputConsole.innerHTML = `> ${html.replace(/\n/g, '<br>') || '<span class="info">(No output)</span>'}`;
-        analyzeErrors(result ? (result.compile_output || result.stderr || "") : "", code);
+        analyzeErrors(result.compile_output || result.stderr || "", code);
 
     } catch (err) {
         console.error("Execution Error:", err);
-        const errorMsg = err.name === 'AbortError' ? "Request timed out. Server is too slow." : err.message;
-        outputConsole.innerHTML += `<br><span class="error">> ❌ Error: ${errorMsg}</span>`;
-
-        // Final Fallback for other languages if server fails
+        outputConsole.innerHTML += `<br><span class="error">> ❌ Server Error. Falling back to simulation...</span>`;
         await executeCodeWithFallback(code);
     } finally {
         runBtn.disabled = false;
@@ -653,37 +632,22 @@ function createFixCard(f) {
 }
 
 async function askAIFix(f, card) {
-    const aiKey = localStorage.getItem('gemini_api_key');
-    if (!aiKey) {
-        showToast(currentUIText === 'ar' ? "ضف مفتاح Gemini API من الإعدادات الأول!" : "Add Gemini API Key in settings first!");
-        openSettings();
-        return;
-    }
-
     const feedback = document.createElement('div');
     feedback.className = 'ai-loading';
-    feedback.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${currentUIText === 'ar' ? 'جاري التحليل...' : 'Analyzing...'}`;
+    feedback.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${currentUIText === 'ar' ? 'جاري التحليل من السيرفر...' : 'Analyzing from server...'}`;
     card.appendChild(feedback);
 
     try {
-        const prompt = `Act as an expert programming tutor for a student using an online IDE. 
-        Language: ${currentLanguage}
-        Error Type: ${f.type}
-        Line: ${f.line}
-        Code snippet on that line: ${f.part}
-        Compiler/Static error message: ${f.explanation_en}
-        
-        Please provide a concise but deep explanation of why this error happens and how to fix it. 
-        Respond in ${currentUIText === 'ar' ? 'Arabic' : 'English'}. 
-        Format your response with markdown. Keep it under 100 words.`;
+        const prompt = `Act as an expert programming tutor. Language: ${currentLanguage}. Error Type: ${f.type}. Line: ${f.line}. Snippet: ${f.part}. Explanation: ${f.explanation_en}. Provide a concise fix in ${currentUIText === 'ar' ? 'Arabic' : 'English'}. Include code example.`;
 
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${aiKey}`, {
+        const response = await fetch('/api/ai-explain', {
             method: 'POST',
-            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt: prompt })
         });
 
         const data = await response.json();
-        const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || "AI couldn't generate a response.";
+        const aiText = data.text || "AI Service unavailable.";
 
         feedback.remove();
         const aiResult = document.createElement('div');
@@ -692,7 +656,7 @@ async function askAIFix(f, card) {
         card.appendChild(aiResult);
     } catch (e) {
         feedback.remove();
-        showToast("AI Error: " + e.message);
+        showToast("Server AI Error: " + e.message);
     }
 }
 

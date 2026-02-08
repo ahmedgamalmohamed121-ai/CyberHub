@@ -20,17 +20,10 @@ const io = new Server(server, {
 
 const PORT = process.env.PORT || 3000;
 
-// Verified Piston Public Mirrors
-const PISTON_ENDPOINTS = [
-    'https://emmet.vps.realt.ws/piston/api/v2/execute',
-    'https://piston.rtex.dev/api/v2/execute',
-    'https://piston.codes/api/v2/execute',
-    'https://piston.engineer/api/v2/execute'
-];
-
 const JUDGE0_URL = process.env.JUDGE0_API_URL || 'https://judge0-ce.p.rapidapi.com/submissions';
 const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY;
 const RAPIDAPI_HOST = process.env.RAPIDAPI_HOST;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 const LANGUAGE_IDS = {
     'python': 71,   // Python 3.8.1
@@ -47,21 +40,10 @@ app.post('/api/execute', async (req, res) => {
 
     if (!code) return res.status(400).json({ error: "No code provided" });
 
-    // --- DEMO / OFFLINE MODE ---
-    if (code.toLowerCase().includes("cyberhub demo")) {
-        return res.json({
-            stdout: `Welcome to CyberHub ${language.toUpperCase()} Demo Mode!\n--------------------\nCode received: OK\nCompiler: Cloud Simulated\nStatus: Success`,
-            stderr: "",
-            compile_output: "",
-            status: { id: 3, description: "Accepted" }
-        });
-    }
-
     const languageId = LANGUAGE_IDS[language];
     if (!languageId) return res.status(400).json({ error: "Unsupported language" });
 
     try {
-        // Step 1: Create Submission
         const submissionResponse = await axios.post(`${JUDGE0_URL}?base64_encoded=false&wait=false`, {
             language_id: languageId,
             source_code: code,
@@ -77,12 +59,10 @@ app.post('/api/execute', async (req, res) => {
         const token = submissionResponse.data.token;
         if (!token) throw new Error("Failed to get token from Judge0");
 
-        // Step 2: Poll for results
         let result = null;
         const maxPolls = 10;
         for (let i = 0; i < maxPolls; i++) {
-            await new Promise(resolve => setTimeout(resolve, 1500)); // Wait 1.5s
-
+            await new Promise(resolve => setTimeout(resolve, 1500));
             const pollResponse = await axios.get(`${JUDGE0_URL}/${token}?base64_encoded=false`, {
                 headers: {
                     'X-RapidAPI-Key': RAPIDAPI_KEY,
@@ -91,7 +71,7 @@ app.post('/api/execute', async (req, res) => {
             });
 
             const status = pollResponse.data.status.id;
-            if (status !== 1 && status !== 2) { // 1: In Queue, 2: Processing
+            if (status !== 1 && status !== 2) {
                 result = pollResponse.data;
                 break;
             }
@@ -115,6 +95,21 @@ app.post('/api/execute', async (req, res) => {
             error: "Failed to execute code",
             details: error.response ? error.response.data : error.message
         });
+    }
+});
+
+app.post('/api/ai-explain', async (req, res) => {
+    const { prompt } = req.body;
+    if (!GEMINI_API_KEY) return res.status(503).json({ error: "AI Service not configured on server" });
+
+    try {
+        const response = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+            contents: [{ parts: [{ text: prompt }] }]
+        });
+        const aiText = response.data.candidates?.[0]?.content?.parts?.[0]?.text || "AI Error";
+        res.json({ text: aiText });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
     }
 });
 
