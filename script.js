@@ -642,9 +642,10 @@ function createFixCard(f) {
 }
 
 async function askAIFix(f, card) {
+    const aiKey = "AIzaSyB9RzOyfKA16uBnh4sZv3hpJp6fZUrhJiI";
     const feedback = document.createElement('div');
     feedback.className = 'ai-loading';
-    feedback.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${currentUIText === 'ar' ? 'جاري التحليل من السيرفر...' : 'Analyzing from server...'}`;
+    feedback.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${currentUIText === 'ar' ? 'جاري التحليل من Cyber AI...' : 'Analyzing with Cyber AI...'}`;
     card.appendChild(feedback);
 
     try {
