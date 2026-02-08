@@ -344,7 +344,7 @@
                 Home</button>
             <div class="section-header">
                 <h2>📢 Announcements</h2>
-                <p>Stay informed with the latest updates delivered directly from our Telegram channel.</p>
+                <p>Stay updated with the latest news, schedules, and important broadcasts.</p>
             </div>
 
             <div class="announcement-controls">
@@ -508,7 +508,8 @@
                             <div class="admin-form-row">
                                 <div class="admin-input-group">
                                     <label>Target Subject</label>
-                                    <select id="adminSubjectSelect" onchange="loadAdminMaterials()">
+                                    <select id="adminSubjectSelect"
+                                        onchange="loadAdminMaterials(); toggleAdminMaterialFields();">
                                         <option value="math2">رياضيات 2</option>
                                         <option value="prog2">برمجة 2</option>
                                         <option value="discrete">تراكيب محددة</option>
@@ -529,13 +530,19 @@
 
                             <div id="adminChapterSelectRow" class="admin-input-group" style="display: none;">
                                 <label>Select Chapter Slot</label>
-                                <select id="adminChapterIndex">
-                                    <option value="0">Chapter 1</option>
-                                    <option value="1">Chapter 2</option>
-                                    <option value="2">Chapter 3</option>
-                                    <option value="3">Chapter 4</option>
-                                    <option value="4">Chapter 5</option>
-                                </select>
+                                <div style="display: flex; gap: 10px;">
+                                    <select id="adminChapterIndex" style="flex: 1;">
+                                        <option value="0">Chapter 1</option>
+                                        <option value="1">Chapter 2</option>
+                                        <option value="2">Chapter 3</option>
+                                        <option value="3">Chapter 4</option>
+                                        <option value="4">Chapter 5</option>
+                                    </select>
+                                    <button class="btn btn-secondary" onclick="prepareNewChapterSlot()"
+                                        style="width: auto; padding: 0 15px; font-size: 0.8rem; white-space: nowrap;">
+                                        <i class="fas fa-plus"></i> New Chapter
+                                    </button>
+                                </div>
                             </div>
 
                             <div class="admin-input-group">
@@ -545,7 +552,17 @@
 
                             <div id="adminUrlRow" class="admin-input-group">
                                 <label id="adminMatUrlLabel">URL / Link</label>
-                                <input type="text" id="adminMatUrl" placeholder="Link to video or file...">
+                                <div style="display: flex; gap: 10px;">
+                                    <input type="text" id="adminMatUrl" placeholder="Link to video or file..."
+                                        style="flex: 1;">
+                                    <input type="file" id="adminFileInput" style="display: none;"
+                                        onchange="handleAdminFileUpload()">
+                                    <button id="adminUploadBtn" class="btn btn-secondary"
+                                        onclick="document.getElementById('adminFileInput').click()"
+                                        style="width: auto; padding: 0 15px; font-size: 0.8rem; white-space: nowrap; display: none;">
+                                        <i class="fas fa-upload"></i> Upload PDF/File
+                                    </button>
+                                </div>
                             </div>
 
                             <div id="adminContentRow" class="admin-input-group" style="display: none;">

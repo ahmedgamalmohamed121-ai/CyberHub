@@ -9,9 +9,21 @@ const path = require('path');
 const crypto = require('crypto');
 
 const app = express();
+const multer = require('multer');
 app.use(cors());
 app.use(express.json());
 app.use(express.static('./'));
+app.use('/uploads', express.static('uploads'));
+
+// Multer Config
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, 'uploads/'),
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, uniqueSuffix + path.extname(file.originalname));
+    }
+});
+const upload = multer({ storage: storage });
 
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -48,6 +60,8 @@ async function initStorage() {
     try { await fs.access(SUBSCRIBERS_FILE); } catch { await fs.writeFile(SUBSCRIBERS_FILE, '[]'); }
     try { await fs.access(MATERIALS_FILE); } catch { await fs.writeFile(MATERIALS_FILE, '{}'); }
     try { await fs.access(GRADES_FILE); } catch { await fs.writeFile(GRADES_FILE, '[]'); }
+    const uploadsDir = path.join(__dirname, 'uploads');
+    try { await fs.access(uploadsDir); } catch { await fs.mkdir(uploadsDir); }
 }
 initStorage();
 
@@ -396,6 +410,11 @@ app.delete('/api/admin/grade/:id', adminAuth, async (req, res) => {
     } catch (err) {
         res.status(500).json({ error: "Failed to delete student" });
     }
+});
+
+app.post('/api/admin/upload', adminAuth, upload.single('file'), (req, res) => {
+    if (!req.file) return res.status(400).json({ error: "No file uploaded" });
+    res.json({ success: true, filePath: `/uploads/${req.file.filename}` });
 });
 
 app.post('/api/update', (req, res) => {

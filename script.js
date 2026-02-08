@@ -1086,11 +1086,18 @@ try {
 if (socket) {
     socket.on('new_announcement', (announcement) => {
         addAnnouncementToFeed(announcement, true);
-        if (document.getElementById('announcements').style.display === 'block') {
-            // Already on page
-        } else {
-            showToast("New Announcement! 📢");
+
+        // Always notify, regardless of current view
+        showToast("New Announcement! 📢");
+
+        if (window.showNativeNotification) {
+            showNativeNotification("CyberHub Update 🚀", announcement.text);
         }
+
+        // Play a subtle sound if possible (optional enhancement)
+        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+        audio.volume = 0.5;
+        audio.play().catch(e => console.log('Audio play failed', e)); // Auto-play policies might block
     });
 }
 
@@ -1122,7 +1129,7 @@ function addAnnouncementToFeed(a, isNew) {
     const time = new Date(a.created_at).toLocaleString();
     header.innerHTML = `
         <div class="announcement-time"><i class="fas fa-clock"></i> ${time}</div>
-        <div class="announcement-source">via Telegram</div>
+        <div class="announcement-source"><i class="fas fa-bullhorn"></i> Official Broadcast</div>
     `;
 
     const body = document.createElement('div');
@@ -1157,41 +1164,93 @@ async function setupNotifications() {
     const btn = document.getElementById('enableNotifications');
     const status = document.getElementById('notificationStatus');
 
-    if (!messaging) {
-        status.textContent = "Notifications not supported on this browser.";
+    if (!("Notification" in window)) {
+        status.textContent = "This browser does not support desktop notification";
         return;
     }
 
     try {
         const permission = await Notification.requestPermission();
         if (permission === 'granted') {
-            const token = await messaging.getToken({ vapidKey: 'YOUR_VAPID_KEY' });
-            if (token) {
-                // Send to backend
-                await fetch('/api/subscribe', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ token })
-                });
-                btn.style.display = 'none';
-                status.textContent = "✅ Notifications enabled!";
-                status.style.color = "var(--primary-green)";
+            status.textContent = "✅ Notifications enabled!";
+            status.style.color = "var(--primary-green)";
+            btn.style.display = 'none';
+            localStorage.setItem('notificationsEnabled', 'true');
+
+            // Show a test notification
+            new Notification("CyberHub FCI.ZU", {
+                body: "You will now receive live updates directly here!",
+                icon: "/favicon.ico"
+            });
+
+            // If Firebase messaging is actually configured, we can still use it
+            if (messaging && firebaseConfig.apiKey !== "YOUR_API_KEY") {
+                try {
+                    const token = await messaging.getToken({ vapidKey: firebaseConfig.vapidKey || 'YOUR_VAPID_KEY' });
+                    if (token) {
+                        fetch('/api/subscribe', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ token })
+                        });
+                    }
+                } catch (e) { console.warn("FCM Token failed, falling back to Native Sockets", e); }
             }
         } else {
-            status.textContent = "Notifications blocked.";
+            status.textContent = "Notifications blocked. Please enable via browser settings.";
+            status.style.color = "var(--primary-red)";
         }
     } catch (err) {
-        console.error("FCM Setup Error:", err);
+        console.error("Notification Setup Error:", err);
         status.textContent = "Error enabling notifications.";
     }
 }
 
-document.getElementById('enableNotifications').addEventListener('click', setupNotifications);
+document.getElementById('enableNotifications')?.addEventListener('click', setupNotifications);
+
+// Helper to show native notification
+window.showNativeNotification = (title, body) => {
+    if (!("Notification" in window)) {
+        console.error("This browser does not support desktop notification");
+        return;
+    }
+
+    if (Notification.permission === 'granted') {
+        try {
+            const notif = new Notification(title, {
+                body: body,
+                silent: false,
+                requireInteraction: true // Keeps notification on screen until user interacts
+            });
+            notif.onclick = (event) => {
+                event.preventDefault();
+                window.focus();
+                window.location.hash = '#announcements';
+                showSection('announcements');
+                notif.close();
+            };
+        } catch (e) {
+            console.error("Notification trigger failed:", e);
+        }
+    } else {
+        console.warn("Permission denied or default");
+    }
+};
 
 // Initial load check
 if (window.location.hash === '#announcements') {
     showSection('announcements');
 }
+
+// Notification Persistence Check
+window.addEventListener('DOMContentLoaded', () => {
+    const btn = document.getElementById('enableNotifications');
+    const container = document.querySelector('.announcement-controls');
+
+    if (Notification.permission === 'granted' || localStorage.getItem('notificationsEnabled') === 'true') {
+        if (container) container.style.display = 'none';
+    }
+});
 
 // --- ADMIN DASHBOARD LOGIC ---
 let adminToken = localStorage.getItem('adminToken');
@@ -1225,36 +1284,7 @@ window.submitAdminLogin = async () => {
     }
 };
 
-// --- ADMIN UX LOGIC ---
-window.switchAdminTab = (tabId) => {
-    // Hide all tabs
-    document.querySelectorAll('.admin-tab').forEach(t => t.style.display = 'none');
-    // Deactivate all nav items
-    document.querySelectorAll('.admin-nav-item').forEach(i => i.classList.remove('active'));
-
-    // Show target tab
-    document.getElementById(`tab-${tabId}`).style.display = 'block';
-    // Activate target nav item
-    const navItems = document.querySelectorAll('.admin-nav-item');
-    if (tabId === 'announcements') navItems[0].classList.add('active');
-    if (tabId === 'materials') navItems[1].classList.add('active');
-};
-
-async function loadAdminAnnouncements() {
-    const list = document.getElementById('adminAnnouncementList');
-    try {
-        const response = await fetch('/api/announcements');
-        const announcements = await response.json();
-        list.innerHTML = announcements.map(a => `
-            <div class="admin-item">
-                <div class="item-text">${escapeHTML(a.text)}</div>
-                <button class="btn-delete-icon" onclick="deleteAnnouncement('${a.id}')"><i class="fas fa-trash"></i></button>
-            </div>
-        `).join('') || '<p style="opacity:0.5;">No broadcast transmissions found.</p>';
-    } catch (err) {
-        list.innerHTML = "<p>Error synchronization failed.</p>";
-    }
-}
+// (Redundant block removed)
 
 window.postAdminAnnouncement = async () => {
     const text = document.getElementById('adminAnnouncementText').value;
@@ -1274,16 +1304,53 @@ window.postAdminAnnouncement = async () => {
             document.getElementById('adminAnnouncementText').value = "";
             showToast("Posted & Group Notified!");
             loadAdminAnnouncements();
+
+            // Immediate feedback for Admin (Sound + Notification)
+            if (Notification.permission === 'granted') {
+                showNativeNotification("CyberHub Admin 🛡️", "Broadcast sent successfully: " + text);
+            } else if (Notification.permission !== 'denied') {
+                Notification.requestPermission().then(permission => {
+                    if (permission === "granted") {
+                        showNativeNotification("CyberHub Admin 🛡️", "Broadcast sent successfully: " + text);
+                    }
+                });
+            } else {
+                showToast("⚠️ Notifications are blocked by browser settings", 4000);
+            }
+
+            // Play confirmation sound (Web Audio API - No external file needed)
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (AudioContext) {
+                    const audioCtx = new AudioContext();
+                    const oscillator = audioCtx.createOscillator();
+                    const gainNode = audioCtx.createGain();
+
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioCtx.destination);
+
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(500, audioCtx.currentTime); // Frequency in Hz
+                    gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+
+                    oscillator.start();
+                    gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.5);
+                    oscillator.stop(audioCtx.currentTime + 0.5);
+                }
+            } catch (e) {
+                console.warn("Audio Context failed", e);
+            }
+
         } else {
             showToast("Post failed: " + data.error);
         }
     } catch (err) {
         showToast("Server error");
+        console.error(err);
     }
 };
 
 window.deleteAnnouncement = async (id) => {
-    if (!confirm("Delete this announcement?")) return;
     try {
         const response = await fetch(`/api/admin/announcement/${id}`, {
             method: 'DELETE',
@@ -1311,6 +1378,7 @@ window.showSection = (id) => {
     if (id === 'admin') {
         loadAdminAnnouncements();
         loadAdminMaterials();
+        toggleAdminMaterialFields();
     }
 };
 
@@ -1322,7 +1390,10 @@ window.switchAdminTab = (tabId) => {
     document.getElementById(`tab-${tabId}`).style.display = 'block';
     const navItems = document.querySelectorAll('.admin-nav-item');
     if (tabId === 'announcements') navItems[0].classList.add('active');
-    if (tabId === 'materials') navItems[1].classList.add('active');
+    if (tabId === 'materials') {
+        navItems[1].classList.add('active');
+        toggleAdminMaterialFields();
+    }
 };
 
 async function loadAdminAnnouncements() {
@@ -1342,29 +1413,111 @@ async function loadAdminAnnouncements() {
 }
 
 // --- ADMIN MATERIALS LOGIC ---
+window.handleAdminFileUpload = async () => {
+    const fileInput = document.getElementById('adminFileInput');
+    if (!fileInput.files || fileInput.files.length === 0) return;
+
+    const file = fileInput.files[0];
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const status = document.getElementById('adminMatUrlLabel');
+    const originalText = status.textContent;
+    status.textContent = "Uploading... Please wait";
+    status.style.color = "var(--primary-cyan)";
+
+    try {
+        const response = await fetch('/api/admin/upload', {
+            method: 'POST',
+            headers: { 'x-admin-token': adminToken },
+            body: formData
+        });
+        const data = await response.json();
+        if (data.success) {
+            document.getElementById('adminMatUrl').value = data.filePath;
+            status.textContent = "✅ Uploaded successfully!";
+            status.style.color = "var(--primary-green)";
+            showToast("File uploaded to server");
+        } else {
+            alert("Upload failed: " + (data.error || "Unknown error"));
+            status.textContent = originalText;
+            status.style.color = "";
+        }
+    } catch (err) {
+        console.error("Upload error:", err);
+        alert("Server connection error during upload");
+        status.textContent = originalText;
+        status.style.color = "";
+    } finally {
+        fileInput.value = ""; // Clear for next upload
+        setTimeout(() => {
+            status.textContent = originalText;
+            status.style.color = "";
+        }, 3000);
+    }
+};
+
 window.toggleAdminMaterialFields = () => {
+    const filterSubjectId = document.getElementById('adminSubjectSelect').value;
     const type = document.getElementById('adminMaterialType').value;
     const chapRow = document.getElementById('adminChapterSelectRow');
     const urlRow = document.getElementById('adminUrlRow');
     const contentRow = document.getElementById('adminContentRow');
     const nameLabel = document.getElementById('adminMatNameLabel');
     const urlLabel = document.getElementById('adminMatUrlLabel');
+    const uploadBtn = document.getElementById('adminUploadBtn');
+    const chapSelect = document.getElementById('adminChapterIndex');
 
     chapRow.style.display = 'none';
     urlRow.style.display = 'block';
     contentRow.style.display = 'none';
+    uploadBtn.style.display = 'none';
     nameLabel.textContent = "Asset Title";
     urlLabel.textContent = "URL / Link";
 
     if (type === 'chapter') {
         chapRow.style.display = 'block';
+        uploadBtn.style.display = 'inline-block';
         nameLabel.textContent = "Chapter Name (Optional)";
         urlLabel.textContent = "Direct File Link (PDF/PPT)";
+
+        // Dynamic Chapter Dropdown
+        const data = SUBJECT_DATA[filterSubjectId];
+        if (data) {
+            const currentChapters = data.chapters || [];
+            let options = currentChapters.map((ch, i) => `<option value="${i}">${ch && ch.name ? ch.name : 'Chapter ' + (i + 1)}</option>`).join('');
+            options += `<option value="${currentChapters.length}">+ New Chapter</option>`;
+            chapSelect.innerHTML = options;
+        }
     } else if (type === 'task') {
         contentRow.style.display = 'block';
         urlRow.style.display = 'none';
         nameLabel.textContent = "Task Name";
     }
+};
+
+window.prepareNewChapterSlot = () => {
+    const filterSubjectId = document.getElementById('adminSubjectSelect').value;
+    const data = SUBJECT_DATA[filterSubjectId];
+    if (!data) return;
+
+    const currentCount = (data.chapters || []).length;
+    const chapSelect = document.getElementById('adminChapterIndex');
+
+    const nextNum = currentCount + 1;
+
+    // Update dropdown to show the new option and select it
+    const currentChapters = data.chapters || [];
+    let options = currentChapters.map((ch, i) => `<option value="${i}">${ch && ch.name ? ch.name : 'Chapter ' + (i + 1)}</option>`).join('');
+    options += `<option value="${currentCount}" selected>+ New Chapter</option>`;
+    chapSelect.innerHTML = options;
+
+    // Pre-fill fields for the user
+    document.getElementById('adminMatName').value = `Chapter ${nextNum}`;
+    document.getElementById('adminMatUrl').value = "";
+
+    showToast(`Ready for Chapter ${nextNum} 🚀`);
+    document.getElementById('adminMatUrl').focus();
 };
 
 window.addMaterialToSubject = async () => {
@@ -1381,8 +1534,8 @@ window.addMaterialToSubject = async () => {
     let payload = { subjectId, material: { type, data: materialData } };
 
     if (type === 'chapter') {
-        if (!url.trim()) return showToast("File link is required");
-        materialData.file = url;
+        // Allow adding chapters without immediate file links
+        materialData.file = url.trim() || null;
         if (!materialData.name) materialData.name = `Chapter ${parseInt(chapterIndex) + 1}`;
         payload.material.index = parseInt(chapterIndex);
     } else if (type === 'playlist') {
@@ -1410,6 +1563,7 @@ window.addMaterialToSubject = async () => {
             document.getElementById('adminMatContent').value = "";
             await loadMaterials();
             loadAdminMaterials();
+            toggleAdminMaterialFields();
         }
     } catch (err) { showToast("Logic synchronization failed"); }
 };
