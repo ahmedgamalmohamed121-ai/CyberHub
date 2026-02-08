@@ -2207,6 +2207,15 @@ input:checked+.slider-mini:before {
     color: var(--primary-cyan) !important;
 }
 
+.light-mode .playlist-group {
+    background: #f0f9ff !important;
+    border: 1px solid #bae6fd !important;
+}
+
+.light-mode .playlist-group h4 {
+    color: #0369a1 !important;
+}
+
 .playlist-items {
     list-style: none;
     margin-top: 1.5rem;
@@ -2336,6 +2345,23 @@ input:checked+.slider-mini:before {
     font-size: 0.85rem;
     margin-top: 1rem;
     border-left: 2px solid rgba(0, 243, 255, 0.1);
+}
+
+.light-mode .task-card {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02) !important;
+}
+
+.light-mode .task-title {
+    color: #0369a1;
+}
+
+.light-mode .task-content-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    color: #334155;
+    border-left-color: #0ea5e9;
 }
 
 .btn-copy-alt {

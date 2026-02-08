@@ -55,6 +55,16 @@ window.addEventListener('load', () => {
         editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
             document.getElementById('runBtn').click();
         });
+
+        // CRITICAL FIX: Ensure accurate character metrics after fonts are fully loaded
+        if (document.fonts) {
+            document.fonts.ready.then(() => {
+                setTimeout(() => {
+                    monaco.editor.remeasureFonts();
+                    if (editor) editor.layout();
+                }, 500);
+            });
+        }
     });
     setupEventListeners();
 
@@ -628,6 +638,11 @@ function showSection(id) {
     document.querySelectorAll('.view').forEach(v => v.classList.toggle('hidden-view', v.id !== id));
     document.querySelectorAll('.nav-links li').forEach(li => li.classList.toggle('active', li.dataset.section === id));
     localStorage.setItem('activeSection', id);
+
+    // Refresh editor layout when shown
+    if (id === 'editor' && editor) {
+        setTimeout(() => editor.layout(), 50);
+    }
 }
 
 function toggleTheme() {
