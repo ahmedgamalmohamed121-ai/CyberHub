@@ -48,9 +48,14 @@ window.addEventListener('load', () => {
             accessibilitySupport: 'off',
             accessibilityStrategy: 'off'
         });
+        let analyzeTimeout;
         editor.onDidChangeModelContent(() => {
             const code = editor.getValue();
             localStorage.setItem(`code_${currentLanguage}`, code);
+
+            // Live Smart Fix (Debounced for performance)
+            clearTimeout(analyzeTimeout);
+            analyzeTimeout = setTimeout(() => analyzeErrors("", code), 1000);
         });
         editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
             document.getElementById('runBtn').click();
@@ -99,7 +104,9 @@ function setupEventListeners() {
         currentLanguage = lang;
         if (editor) {
             monaco.editor.setModelLanguage(editor.getModel(), MONACO_MODES[lang]);
-            editor.setValue(localStorage.getItem(`code_${lang}`) || getCodeTemplate(lang));
+            const saved = localStorage.getItem(`code_${lang}`) || getCodeTemplate(lang);
+            editor.setValue(saved);
+            analyzeErrors("", saved);
         }
     });
 
@@ -378,10 +385,8 @@ async function executeCode() {
     const originalBtnHTML = runBtn.innerHTML;
     runBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> RUNNING...';
 
-    // Clear results before new run
-    outputConsole.innerHTML = "";
-    document.getElementById('smartFixContainer').innerHTML = `<div class="empty-state">⏳ Waiting for Compiler...</div>`;
-    document.getElementById('errorCount').innerText = "0";
+    // Run initial analysis
+    analyzeErrors("", code);
 
     try {
         // --- 2. LOCAL EXECUTION (Unchanged) ---
@@ -539,7 +544,6 @@ function runRuleEngine(err, code, lang) {
         });
 
         if (results.length === 0 && err.trim().length > 0) {
-            // Noise filter to avoid showing cards for progress or success messages
             const noiseKeywords = ['loading', 'downloading', 'pyodide', 'success', 'warning: '];
             const isActuallyError = !noiseKeywords.some(n => err.toLowerCase().includes(n)) || err.toLowerCase().includes('failed');
 
@@ -552,11 +556,9 @@ function runRuleEngine(err, code, lang) {
                 });
             }
         }
-        if (results.length > 0) return results;
     }
 
-    if (err) return [];
-
+    // --- 2. OPTIONAL STATIC ANALYSIS (Run ALWAYS to merge with compiler errors) ---
     const hasMain = code.includes('main') || code.includes('function') || code.includes('<?php') || lang === 'python' || lang === 'javascript';
     if (!hasMain && code.trim().length > 50) {
         results.push({
