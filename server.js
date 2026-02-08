@@ -318,7 +318,7 @@ app.delete('/api/admin/announcement/:id', adminAuth, async (req, res) => {
 });
 
 app.post('/api/admin/material', adminAuth, async (req, res) => {
-    const { subjectId, material } = req.body; // material: { type: 'chapter'|'playlist'|'task', data: {...} }
+    const { subjectId, material } = req.body; // material: { type: 'chapter'|'playlist'|'task', data: {...}, index: ? }
     if (!subjectId || !material) return res.status(400).json({ error: "Data missing" });
 
     try {
@@ -330,13 +330,23 @@ app.post('/api/admin/material', adminAuth, async (req, res) => {
         }
 
         const subj = materials[subjectId];
-        if (material.type === 'chapter') subj.chapters.push(material.data);
-        if (material.type === 'playlist') subj.playlists.push(material.data);
-        if (material.type === 'task') subj.tasks.push(material.data);
+
+        if (material.type === 'chapter') {
+            // Ensure chapters array has enough slots
+            if (!subj.chapters) subj.chapters = [];
+            subj.chapters[material.index] = material.data;
+        } else if (material.type === 'playlist') {
+            if (!subj.playlists) subj.playlists = [];
+            subj.playlists.push(material.data);
+        } else if (material.type === 'task') {
+            if (!subj.tasks) subj.tasks = [];
+            subj.tasks.push(material.data);
+        }
 
         await fs.writeFile(MATERIALS_FILE, JSON.stringify(materials));
         res.json({ success: true });
     } catch (err) {
+        console.error("Material Save Error:", err);
         res.status(500).json({ error: "Failed to update materials" });
     }
 });

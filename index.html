@@ -522,26 +522,41 @@
                                 </div>
                                 <div class="admin-input-group">
                                     <label>Resource Category</label>
-                                    <select id="adminMaterialType">
-                                        <option value="chapter">Chapter (PDF/File)</option>
-                                        <option value="playlist">Playlist (Video Link)</option>
-                                        <option value="task">Task (Internal Assignment)</option>
+                                    <select id="adminMaterialType" onchange="toggleAdminMaterialFields()">
+                                        <option value="playlist">Playlist (Video)</option>
+                                        <option value="chapter">Chapter (PDF File)</option>
+                                        <option value="task">Task (Code/Assignment)</option>
                                     </select>
                                 </div>
                             </div>
-                            <div class="admin-input-group">
-                                <label>Asset Title</label>
-                                <input type="text" id="adminMatName" placeholder="e.g. Chapter 4: Network Protocols">
+
+                            <div id="adminChapterSelectRow" class="admin-input-group" style="display: none;">
+                                <label>Select Chapter Slot</label>
+                                <select id="adminChapterIndex">
+                                    <option value="0">Chapter 1</option>
+                                    <option value="1">Chapter 2</option>
+                                    <option value="2">Chapter 3</option>
+                                    <option value="3">Chapter 4</option>
+                                    <option value="4">Chapter 5</option>
+                                </select>
                             </div>
+
                             <div class="admin-input-group">
-                                <label>Payload URL / File Link</label>
-                                <input type="text" id="adminMatUrl" placeholder="Direct access link...">
+                                <label id="adminMatNameLabel">Asset Title</label>
+                                <input type="text" id="adminMatName" placeholder="e.g. Overview & Intro">
                             </div>
-                            <div class="admin-input-group">
-                                <label>Task Parameters (JSON/Text)</label>
-                                <textarea id="adminMatContent" placeholder="Define assignment scope or code snippet..."
+
+                            <div id="adminUrlRow" class="admin-input-group">
+                                <label id="adminMatUrlLabel">URL / Link</label>
+                                <input type="text" id="adminMatUrl" placeholder="Link to video or file...">
+                            </div>
+
+                            <div id="adminContentRow" class="admin-input-group" style="display: none;">
+                                <label>Task Content</label>
+                                <textarea id="adminMatContent" placeholder="Task description or code..."
                                     rows="3"></textarea>
                             </div>
+
                             <button class="btn btn-secondary" onclick="addMaterialToSubject()"
                                 style="width: 100%;">Authorize Injection</button>
                         </div>

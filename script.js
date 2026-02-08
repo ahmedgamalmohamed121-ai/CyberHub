@@ -1378,21 +1378,57 @@ window.deleteStudentGrade = async (id) => {
 };
 
 // --- ADMIN MATERIALS LOGIC ---
+window.toggleAdminMaterialFields = () => {
+    const type = document.getElementById('adminMaterialType').value;
+    const chapRow = document.getElementById('adminChapterSelectRow');
+    const urlRow = document.getElementById('adminUrlRow');
+    const contentRow = document.getElementById('adminContentRow');
+    const nameLabel = document.getElementById('adminMatNameLabel');
+    const urlLabel = document.getElementById('adminMatUrlLabel');
+
+    // Default states
+    chapRow.style.display = 'none';
+    urlRow.style.display = 'block';
+    contentRow.style.display = 'none';
+    nameLabel.textContent = "Asset Title";
+    urlLabel.textContent = "URL / Link";
+
+    if (type === 'chapter') {
+        chapRow.style.display = 'block';
+        nameLabel.textContent = "Chapter Name (Optional)";
+        urlLabel.textContent = "Direct File Link (PDF/PPT)";
+    } else if (type === 'task') {
+        contentRow.style.display = 'block';
+        urlRow.style.display = 'none';
+        nameLabel.textContent = "Task Name";
+    }
+};
+
 window.addMaterialToSubject = async () => {
     const subjectId = document.getElementById('adminSubjectSelect').value;
     const type = document.getElementById('adminMaterialType').value;
     const name = document.getElementById('adminMatName').value;
     const url = document.getElementById('adminMatUrl').value;
     const content = document.getElementById('adminMatContent').value;
+    const chapterIndex = document.getElementById('adminChapterIndex').value;
 
-    if (!name.trim()) return showToast("Name is required");
+    if (!name.trim() && type !== 'chapter') return showToast("Name is required");
 
-    const materialData = { name };
-    if (url.trim()) {
-        if (type === 'chapter') materialData.file = url;
-        else materialData.url = url;
+    const materialData = { name: name.trim() };
+    let payload = { subjectId, material: { type, data: materialData } };
+
+    if (type === 'chapter') {
+        if (!url.trim()) return showToast("File link is required");
+        materialData.file = url;
+        if (!materialData.name) materialData.name = `Chapter ${parseInt(chapterIndex) + 1}`;
+        payload.material.index = parseInt(chapterIndex);
+    } else if (type === 'playlist') {
+        if (!url.trim()) return showToast("Playlist link is required");
+        materialData.url = url;
+    } else if (type === 'task') {
+        if (!content.trim()) return showToast("Task content is required");
+        materialData.content = content;
     }
-    if (type === 'task' && content.trim()) materialData.content = content;
 
     try {
         const response = await fetch('/api/admin/material', {
@@ -1401,11 +1437,11 @@ window.addMaterialToSubject = async () => {
                 'Content-Type': 'application/json',
                 'x-admin-token': adminToken
             },
-            body: JSON.stringify({ subjectId, material: { type, data: materialData } })
+            body: JSON.stringify(payload)
         });
         const data = await response.json();
         if (data.success) {
-            showToast(`Added to ${subjectId}`);
+            showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} synchronized!`);
             // Reset fields
             document.getElementById('adminMatName').value = "";
             document.getElementById('adminMatUrl').value = "";
@@ -1413,7 +1449,7 @@ window.addMaterialToSubject = async () => {
             await loadMaterials();
             loadAdminMaterials();
         }
-    } catch (err) { showToast("Action failed"); }
+    } catch (err) { showToast("Logic synchronization failed"); }
 };
 
 async function loadAdminMaterials() {
