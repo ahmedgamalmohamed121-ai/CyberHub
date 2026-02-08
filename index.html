@@ -480,9 +480,6 @@
                     <div class="admin-nav-item" onclick="switchAdminTab('materials')">
                         <i class="fas fa-file-medical"></i> Materials
                     </div>
-                    <div class="admin-nav-item" onclick="switchAdminTab('grades')">
-                        <i class="fas fa-graduation-cap"></i> Student Grades
-                    </div>
                 </aside>
 
                 <div class="admin-content-area">
@@ -563,39 +560,6 @@
                         <div class="admin-card" style="margin-top: 2rem;">
                             <h3><i class="fas fa-database"></i> Resource Repositories</h3>
                             <div id="adminMaterialsList" class="admin-list"></div>
-                        </div>
-                    </div>
-
-                    <!-- Grades Tab -->
-                    <div id="tab-grades" class="admin-tab" style="display: none;">
-                        <div class="admin-card">
-                            <h3><i class="fas fa-user-shield"></i> Academic Record Management</h3>
-                            <div class="admin-form-row">
-                                <div class="admin-input-group">
-                                    <label>Student UID</label>
-                                    <input type="text" id="adminStudentId" placeholder="2021001">
-                                </div>
-                                <div class="admin-input-group">
-                                    <label>Legal Name</label>
-                                    <input type="text" id="adminStudentName" placeholder="Ahmed Gamal">
-                                </div>
-                                <div class="admin-input-group">
-                                    <label>Current GPA</label>
-                                    <input type="text" id="adminStudentGPA" placeholder="3.8">
-                                </div>
-                            </div>
-                            <div class="admin-input-group">
-                                <label>Transcript Data (JSON)</label>
-                                <textarea id="adminStudentGradesJSON"
-                                    placeholder='[{"subject":"Math","degree":"95","grade":"A+","points":"4.0"}]'
-                                    rows="3"></textarea>
-                            </div>
-                            <button class="btn btn-primary" onclick="addStudentGrade()" style="width: 100%;">Commit
-                                Record</button>
-                        </div>
-                        <div class="admin-card" style="margin-top: 2rem;">
-                            <h3><i class="fas fa-users-cog"></i> Student Directory</h3>
-                            <div id="adminGradesList" class="admin-list"></div>
                         </div>
                     </div>
                 </div>

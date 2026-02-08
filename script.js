@@ -1238,7 +1238,6 @@ window.switchAdminTab = (tabId) => {
     const navItems = document.querySelectorAll('.admin-nav-item');
     if (tabId === 'announcements') navItems[0].classList.add('active');
     if (tabId === 'materials') navItems[1].classList.add('active');
-    if (tabId === 'grades') navItems[2].classList.add('active');
 };
 
 async function loadAdminAnnouncements() {
@@ -1312,70 +1311,35 @@ window.showSection = (id) => {
     if (id === 'admin') {
         loadAdminAnnouncements();
         loadAdminMaterials();
-        loadAdminGrades();
     }
 };
 
-// --- ADMIN GRADES LOGIC ---
-window.addStudentGrade = async () => {
-    const id = document.getElementById('adminStudentId').value;
-    const name = document.getElementById('adminStudentName').value;
-    const gpa = document.getElementById('adminStudentGPA').value;
-    const gradesJSON = document.getElementById('adminStudentGradesJSON').value;
+// --- ADMIN UX LOGIC ---
+window.switchAdminTab = (tabId) => {
+    document.querySelectorAll('.admin-tab').forEach(t => t.style.display = 'none');
+    document.querySelectorAll('.admin-nav-item').forEach(i => i.classList.remove('active'));
 
-    if (!id || !name || !gradesJSON) return showToast("ID, Name, and Grades are required");
-
-    try {
-        const grades = JSON.parse(gradesJSON);
-        const student = { id, name, gpa, grades };
-
-        const response = await fetch('/api/admin/grade', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-admin-token': adminToken
-            },
-            body: JSON.stringify({ student })
-        });
-        const data = await response.json();
-        if (data.success) {
-            showToast("Student Record Saved");
-            document.getElementById('adminStudentId').value = "";
-            document.getElementById('adminStudentName').value = "";
-            document.getElementById('adminStudentGPA').value = "";
-            document.getElementById('adminStudentGradesJSON').value = "";
-            await fetchAllGrades();
-            loadAdminGrades();
-        }
-    } catch (err) { showToast("Invalid JSON or Server Error"); }
+    document.getElementById(`tab-${tabId}`).style.display = 'block';
+    const navItems = document.querySelectorAll('.admin-nav-item');
+    if (tabId === 'announcements') navItems[0].classList.add('active');
+    if (tabId === 'materials') navItems[1].classList.add('active');
 };
 
-async function loadAdminGrades() {
-    const list = document.getElementById('adminGradesList');
-    list.innerHTML = STUDENT_DATA_LIST.map(s => `
-        <div class="admin-item">
-            <div class="item-text">
-                <strong>[${s.id}]</strong> ${escapeHTML(s.name)} (GPA: ${s.gpa})
+async function loadAdminAnnouncements() {
+    const list = document.getElementById('adminAnnouncementList');
+    try {
+        const response = await fetch('/api/announcements');
+        const announcements = await response.json();
+        list.innerHTML = announcements.map(a => `
+            <div class="admin-item">
+                <div class="item-text">${escapeHTML(a.text)}</div>
+                <button class="btn-delete-icon" onclick="deleteAnnouncement('${a.id}')"><i class="fas fa-trash"></i></button>
             </div>
-            <button class="btn-delete" onclick="deleteStudentGrade('${s.id}')"><i class="fas fa-trash"></i></button>
-        </div>
-    `).join('') || '<p style="opacity:0.5;">No student records found.</p>';
+        `).join('') || '<p style="opacity:0.5;">No broadcast transmissions found.</p>';
+    } catch (err) {
+        list.innerHTML = "<p>Error synchronization failed.</p>";
+    }
 }
-
-window.deleteStudentGrade = async (id) => {
-    if (!confirm(`Delete student record for ID: ${id}?`)) return;
-    try {
-        const response = await fetch(`/api/admin/grade/${id}`, {
-            method: 'DELETE',
-            headers: { 'x-admin-token': adminToken }
-        });
-        if (response.ok) {
-            showToast("Student record deleted");
-            await fetchAllGrades();
-            loadAdminGrades();
-        }
-    } catch (err) { showToast("Delete failed"); }
-};
 
 // --- ADMIN MATERIALS LOGIC ---
 window.toggleAdminMaterialFields = () => {
@@ -1386,7 +1350,6 @@ window.toggleAdminMaterialFields = () => {
     const nameLabel = document.getElementById('adminMatNameLabel');
     const urlLabel = document.getElementById('adminMatUrlLabel');
 
-    // Default states
     chapRow.style.display = 'none';
     urlRow.style.display = 'block';
     contentRow.style.display = 'none';
@@ -1442,7 +1405,6 @@ window.addMaterialToSubject = async () => {
         const data = await response.json();
         if (data.success) {
             showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} synchronized!`);
-            // Reset fields
             document.getElementById('adminMatName').value = "";
             document.getElementById('adminMatUrl').value = "";
             document.getElementById('adminMatContent').value = "";
@@ -1464,7 +1426,7 @@ async function loadAdminMaterials() {
                 <i class="fas fa-folder"></i> ${data.title}
             </div>
             <div class="admin-subject-items">
-                ${(data.chapters || []).map((ch, i) => renderAdminMatItem(subjId, 'chapter', ch.name, i)).join('')}
+                ${(data.chapters || []).map((ch, i) => renderAdminMatItem(subjId, 'chapter', ch ? ch.name : "Chapter " + (i + 1), i)).join('')}
                 ${(data.playlists || []).map((pl, i) => renderAdminMatItem(subjId, 'playlist', pl.name, i)).join('')}
                 ${(data.tasks || []).map((tk, i) => renderAdminMatItem(subjId, 'task', tk.name, i)).join('')}
             </div>
@@ -1476,9 +1438,9 @@ async function loadAdminMaterials() {
 function renderAdminMatItem(subjId, type, name, index) {
     const icon = type === 'chapter' ? 'fa-file-pdf' : (type === 'playlist' ? 'fa-video' : 'fa-tasks');
     return `
-        <div class="admin-item" style="margin-left: 20px; border-left: 2px solid rgba(255,255,255,0.1); padding-left: 10px;">
-            <div class="item-text"><i class="fas ${icon}" style="opacity: 0.5;"></i> ${escapeHTML(name)}</div>
-            <button class="btn-delete" onclick="deleteAdminMaterial('${subjId}', '${type}', ${index})"><i class="fas fa-trash"></i></button>
+        <div class="admin-item" style="margin-bottom:5px; border-left: 2px solid var(--primary-cyan);">
+            <div class="item-text" style="padding-left:10px;"><i class="fas ${icon}" style="opacity: 0.5; margin-right:10px;"></i> ${escapeHTML(name || "Item")}</div>
+            <button class="btn-delete-icon" onclick="deleteAdminMaterial('${subjId}', '${type}', ${index})" style="transform: scale(0.8);"><i class="fas fa-trash"></i></button>
         </div>
     `;
 }
