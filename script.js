@@ -491,13 +491,18 @@ function runRuleEngine(err, code, lang) {
     if (err) {
         const errorLines = err.split('\n');
         // Look for line numbers in various compiler formats
-        const serverErrorRegex = /:(\d+):/i; // Standard gcc/clang Main.cpp:5:10
+        const standardRegex = /:(\d+):/i;
+        const pythonRegex = /line (\d+)/i;
+
 
         errorLines.forEach(line => {
-            const match = line.match(serverErrorRegex);
-            if (match && (line.toLowerCase().includes('error') || line.toLowerCase().includes('fail'))) {
+            const match = line.match(standardRegex) || line.match(pythonRegex);
+            const isError = line.toLowerCase().includes('error') || line.toLowerCase().includes('fail') ||
+                line.toLowerCase().includes('exception') || line.toLowerCase().includes('traceback');
+
+            if (match && isError) {
                 const lineNum = parseInt(match[1]);
-                let cleanMsg = line.substring(line.indexOf('error') + 5).replace(/^[:\s]*/, '').trim();
+                let cleanMsg = line.replace(/.*error:\s*/i, '').replace(/.*line \d+, in .*/i, '').trim() || line;
 
                 results.push({
                     type: 'Compiler Error',
@@ -511,12 +516,19 @@ function runRuleEngine(err, code, lang) {
             }
         });
 
-        // If we found compiler errors, return them immediately and SKIP static analysis
+        if (results.length === 0 && err.trim().length > 0) {
+            results.push({
+                type: 'General Error', line: '?', part: "Compiler Output",
+                explanation_ar: "في مشكلة في الكود بس مش قادرين نحدد السطر بالظبط.",
+                explanation_en: err.split('\n')[0] || "Unknown compiler error.",
+                suggestion: "", tip_ar: "استخدم الذكاء الاصطناعي عشان تفهم المشكلة."
+            });
+        }
         if (results.length > 0) return results;
     }
 
-    // --- 2. OPTIONAL STATIC ANALYSIS (Only if no compiler error) ---
-    if (err) return []; // If there was an error but regex missed it, don't fallback to magic guesses.
+    if (err) return [];
+
     const hasMain = code.includes('main') || code.includes('function') || code.includes('<?php') || lang === 'python' || lang === 'javascript';
     if (!hasMain && code.trim().length > 50) {
         results.push({
