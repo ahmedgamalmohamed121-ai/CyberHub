@@ -31,6 +31,7 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 // Telegram & Notifications Config
 const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
 const ADMIN_CHAT_IDS = (process.env.ADMIN_CHAT_IDS || "").split(',').map(id => id.trim());
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin123";
 const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET || crypto.randomBytes(16).toString('hex');
 const FCM_SERVER_KEY = process.env.FCM_SERVER_KEY; // Legacy key or use Service Account for V1
 
@@ -236,6 +237,63 @@ async function sendPushNotifications(text) {
         console.error("FCM Error:", err.response ? err.response.data : err.message);
     }
 }
+
+// --- ADMIN DASHBOARD API ---
+
+app.post('/api/admin/login', (req, res) => {
+    const { password } = req.body;
+    if (password === ADMIN_PASSWORD) {
+        // In a real app, use JWT. For now, simple success
+        res.json({ success: true, token: crypto.createHash('sha256').update(ADMIN_PASSWORD).digest('hex') });
+    } else {
+        res.status(401).json({ success: false, error: "Invalid password" });
+    }
+});
+
+// Middleware for admin auth (simple check for demo purpose)
+const adminAuth = (req, res, next) => {
+    const token = req.headers['x-admin-token'];
+    const expected = crypto.createHash('sha256').update(ADMIN_PASSWORD).digest('hex');
+    if (token === expected) return next();
+    res.status(403).json({ error: "Unauthorized" });
+};
+
+app.post('/api/admin/announcement', adminAuth, async (req, res) => {
+    const { text } = req.body;
+    if (!text) return res.status(400).json({ error: "Text required" });
+
+    const announcement = {
+        id: Date.now(),
+        text: text,
+        created_at: new Date().toISOString(),
+        source: "admin_panel"
+    };
+
+    try {
+        const data = await fs.readFile(ANNOUNCEMENTS_FILE, 'utf8');
+        let announcements = JSON.parse(data);
+        announcements.push(announcement);
+        await fs.writeFile(ANNOUNCEMENTS_FILE, JSON.stringify(announcements));
+        io.emit('new_announcement', announcement);
+        sendPushNotifications(announcement.text);
+        res.json({ success: true, announcement });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to save" });
+    }
+});
+
+app.delete('/api/admin/announcement/:id', adminAuth, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const data = await fs.readFile(ANNOUNCEMENTS_FILE, 'utf8');
+        let announcements = JSON.parse(data);
+        const filtered = announcements.filter(a => String(a.id) !== String(id));
+        await fs.writeFile(ANNOUNCEMENTS_FILE, JSON.stringify(filtered));
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to delete" });
+    }
+});
 
 app.post('/api/update', (req, res) => {
     const { type, subject, fileName, name } = req.body;

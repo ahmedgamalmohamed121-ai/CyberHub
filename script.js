@@ -1172,3 +1172,105 @@ document.getElementById('enableNotifications').addEventListener('click', setupNo
 if (window.location.hash === '#announcements') {
     showSection('announcements');
 }
+
+// --- ADMIN DASHBOARD LOGIC ---
+let adminToken = localStorage.getItem('adminToken');
+
+window.openAdminLogin = () => {
+    if (adminToken) showSection('admin');
+    else document.getElementById('adminLoginModal').style.display = 'flex';
+};
+
+window.submitAdminLogin = async () => {
+    const password = document.getElementById('adminPasswordInput').value;
+    try {
+        const response = await fetch('/api/admin/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password })
+        });
+        const data = await response.json();
+        if (data.success) {
+            adminToken = data.token;
+            localStorage.setItem('adminToken', adminToken);
+            document.getElementById('adminLoginModal').style.display = 'none';
+            showSection('admin');
+            showToast("Welcome Admin");
+        } else {
+            alert("Wrong Password");
+        }
+    } catch (err) {
+        showToast("Error logging in");
+    }
+};
+
+async function loadAdminAnnouncements() {
+    const list = document.getElementById('adminAnnouncementList');
+    try {
+        const response = await fetch('/api/announcements');
+        const announcements = await response.json();
+        list.innerHTML = announcements.map(a => `
+            <div class="admin-item">
+                <div class="item-text">${escapeHTML(a.text)}</div>
+                <button class="btn-delete" onclick="deleteAnnouncement('${a.id}')"><i class="fas fa-trash"></i></button>
+            </div>
+        `).join('') || '<p style="opacity:0.5;">No announcements.</p>';
+    } catch (err) {
+        list.innerHTML = "<p>Error loading.</p>";
+    }
+}
+
+window.postAdminAnnouncement = async () => {
+    const text = document.getElementById('adminAnnouncementText').value;
+    if (!text.trim()) return;
+
+    try {
+        const response = await fetch('/api/admin/announcement', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-admin-token': adminToken
+            },
+            body: JSON.stringify({ text })
+        });
+        const data = await response.json();
+        if (data.success) {
+            document.getElementById('adminAnnouncementText').value = "";
+            showToast("Posted & Group Notified!");
+            loadAdminAnnouncements();
+        } else {
+            showToast("Post failed: " + data.error);
+        }
+    } catch (err) {
+        showToast("Server error");
+    }
+};
+
+window.deleteAnnouncement = async (id) => {
+    if (!confirm("Delete this announcement?")) return;
+    try {
+        const response = await fetch(`/api/admin/announcement/${id}`, {
+            method: 'DELETE',
+            headers: { 'x-admin-token': adminToken }
+        });
+        const data = await response.json();
+        if (data.success) {
+            showToast("Deleted");
+            loadAdminAnnouncements();
+            loadAnnouncements(); // Refresh public feed too
+        }
+    } catch (err) {
+        showToast("Delete failed");
+    }
+};
+
+// Modify showSection to handle admin loading
+const originalShowSection = window.showSection;
+window.showSection = (id) => {
+    if (id === 'admin' && !adminToken) {
+        openAdminLogin();
+        return;
+    }
+    originalShowSection(id);
+    if (id === 'admin') loadAdminAnnouncements();
+};
