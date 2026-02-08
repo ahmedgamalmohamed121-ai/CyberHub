@@ -4316,6 +4316,26 @@ footer {
     margin-bottom: 2rem;
 }
 
+.admin-cat-title {
+    font-size: 1rem;
+    color: var(--primary-cyan);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    opacity: 0.9;
+}
+
+.admin-empty-txt {
+    font-size: 0.85rem;
+    color: var(--admin-text-sub);
+    font-style: italic;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.03);
+    border-radius: 8px;
+    text-align: center;
+}
+
 @media (max-width: 900px) {
     .admin-layout {
         grid-template-columns: 1fr;

@@ -1427,14 +1427,29 @@ async function loadAdminMaterials() {
 
     const group = document.createElement('div');
     group.className = 'admin-subject-group';
+
+    const chaptersHTML = (data.chapters || []).map((ch, i) => renderAdminMatItem(filterSubjectId, 'chapter', ch ? ch.name : "Chapter " + (i + 1), i)).join('');
+    const playlistsHTML = (data.playlists || []).map((pl, i) => renderAdminMatItem(filterSubjectId, 'playlist', pl.name, i)).join('');
+    const tasksHTML = (data.tasks || []).map((tk, i) => renderAdminMatItem(filterSubjectId, 'task', tk.name, i)).join('');
+
     group.innerHTML = `
         <div class="admin-subject-header">
             <i class="fas fa-folder-open"></i> Managing Materials for: ${data.title}
         </div>
-        <div class="admin-subject-items">
-            ${(data.chapters || []).map((ch, i) => renderAdminMatItem(filterSubjectId, 'chapter', ch ? ch.name : "Chapter " + (i + 1), i)).join('')}
-            ${(data.playlists || []).map((pl, i) => renderAdminMatItem(filterSubjectId, 'playlist', pl.name, i)).join('')}
-            ${(data.tasks || []).map((tk, i) => renderAdminMatItem(filterSubjectId, 'task', tk.name, i)).join('')}
+        
+        <div class="admin-category-section">
+            <h4 class="admin-cat-title"><i class="fas fa-file-pdf"></i> Chapters / Files</h4>
+            <div class="admin-subject-items">${chaptersHTML || '<p class="admin-empty-txt">No files uploaded.</p>'}</div>
+        </div>
+
+        <div class="admin-category-section" style="margin-top:1.5rem;">
+            <h4 class="admin-cat-title"><i class="fas fa-video"></i> Video Playlists</h4>
+            <div class="admin-subject-items">${playlistsHTML || '<p class="admin-empty-txt">No playlists added.</p>'}</div>
+        </div>
+
+        <div class="admin-category-section" style="margin-top:1.5rem;">
+            <h4 class="admin-cat-title"><i class="fas fa-tasks"></i> Assignments & Tasks</h4>
+            <div class="admin-subject-items">${tasksHTML || '<p class="admin-empty-txt">No tasks defined.</p>'}</div>
         </div>
     `;
     list.appendChild(group);
