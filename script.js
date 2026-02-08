@@ -361,28 +361,46 @@ function runLocalJS(code) {
 async function executeCode() {
     const code = editor.getValue();
     const runBtn = document.getElementById('runBtn');
+    const outputConsole = document.getElementById('outputConsole');
     if (!code.trim()) return;
 
     runBtn.disabled = true;
+    const originalBtnHTML = runBtn.innerHTML;
     runBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> RUNNING...';
-    // 1. Run Static Analysis (Smart Fix) IMMEDIATELY
-    // This shows errors (like missing semicolons) even if the server is not configured.
+
+    // 1. Run Static Analysis (Smart Fix)
     analyzeErrors("", code);
 
-    const preFindings = runRuleEngine("", code, currentLanguage);
-    if (preFindings.length > 0) {
-        outputConsole.innerHTML += `<span class="error">> Possible logic/syntax issues found by Smart Fix.</span><br>`;
-    }
-
     try {
-        // 2. Attempt Server Execution
-        const url = `${JUDGE0_BASE_URL}/submissions?base64_encoded=false&wait=true`;
+        // --- 2. FAST LOCAL EXECUTION ---
+        if (currentLanguage === 'javascript') {
+            const result = runLocalJS(code);
+            outputConsole.innerHTML = `> ${result.stdout.replace(/\n/g, '<br>') || '<span class="info">(No output)</span>'}`;
+            if (result.stderr) outputConsole.innerHTML += `<br><span class="error">${result.stderr}</span>`;
+            return;
+        }
 
+        if (currentLanguage === 'python') {
+            if (!pyodide && !isPyodideLoading) {
+                runBtn.innerHTML = '<i class="fas fa-cog fa-spin"></i> LOADING ENGINE...';
+            }
+            const result = await runLocalPython(code);
+            outputConsole.innerHTML = `> ${result.stdout.replace(/\n/g, '<br>') || '<span class="info">(No output)</span>'}`;
+            if (result.stderr) outputConsole.innerHTML += `<br><span class="error">${result.stderr}</span>`;
+            return;
+        }
+
+        // --- 3. SERVER EXECUTION (For C++, Java, etc.) ---
+        const url = `${JUDGE0_BASE_URL}/submissions?base64_encoded=false&wait=true`;
         const headers = { 'content-type': 'application/json' };
         if (RAPIDAPI_KEY) {
             headers['x-rapidapi-key'] = RAPIDAPI_KEY;
             headers['x-rapidapi-host'] = RAPIDAPI_HOST;
         }
+
+        // Add 10s timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
 
         const response = await fetch(url, {
             method: 'POST',
@@ -390,11 +408,12 @@ async function executeCode() {
             body: JSON.stringify({
                 language_id: LANGUAGE_IDS[currentLanguage],
                 source_code: code
-            })
+            }),
+            signal: controller.signal
         });
+        clearTimeout(timeoutId);
 
         if (!response.ok) throw new Error(`Server Response: ${response.statusText}`);
-
         const result = await response.json();
 
         let html = "";
@@ -403,17 +422,18 @@ async function executeCode() {
         if (result?.stderr) html += `<span class="error">${result.stderr}</span>\n`;
 
         outputConsole.innerHTML = `> ${html.replace(/\n/g, '<br>') || '<span class="info">(No output)</span>'}`;
-
-        // Analyze actual server results with Smart Fix
         analyzeErrors(result ? (result.compile_output || result.stderr || "") : "", code);
 
     } catch (err) {
         console.error("Execution Error:", err);
-        outputConsole.innerHTML += `<span class="error">> ❌ Server Integration Error: ${err.message}</span><br>`;
-        outputConsole.innerHTML += `<span class="info">💡 Site is currently in 'Admin Review' mode. Please ensure Judge0 is configured (Ctrl+Shift+S) to see real-time output. Static Smart Fix is still active above.</span>`;
+        const errorMsg = err.name === 'AbortError' ? "Request timed out. Server is too slow." : err.message;
+        outputConsole.innerHTML += `<br><span class="error">> ❌ Error: ${errorMsg}</span>`;
+
+        // Final Fallback for other languages if server fails
+        await executeCodeWithFallback(code);
     } finally {
         runBtn.disabled = false;
-        runBtn.innerHTML = currentUIText === 'ar' ? '<i class="fas fa-play"></i> تشغيل' : '<i class="fas fa-play"></i> RUN';
+        runBtn.innerHTML = originalBtnHTML;
     }
 }
 
@@ -691,15 +711,15 @@ document.getElementById('closeSchedulePreview')?.addEventListener('click', () =>
 const MOCK_STUDENTS = [
     {
         id: "2021001", name: "Ahmed Gamal", gpa: "3.8", grades: [
-            { subject: "C++ Programming", degree: "95", grade: "A+", points: "4.0" },
-            { subject: "Data Structures", degree: "88", grade: "A", points: "3.7" },
-            { subject: "Discrete Math", degree: "92", grade: "A+", points: "4.0" }
+            { subject: "رياضيات 2", degree: "95", grade: "A+", points: "4.0" },
+            { subject: "برمجة 2", degree: "88", grade: "A", points: "3.7" },
+            { subject: "تراكيب محددة", degree: "92", grade: "A+", points: "4.0" }
         ]
     },
     {
         id: "2021002", name: "Sara Mohamed", gpa: "3.5", grades: [
-            { subject: "C++ Programming", degree: "85", grade: "A-", points: "3.4" },
-            { subject: "Networks", degree: "90", grade: "A", points: "3.7" }
+            { subject: "تراسل البيانات", degree: "85", grade: "A-", points: "3.4" },
+            { subject: "قضايا اجتماعية", degree: "90", grade: "A", points: "3.7" }
         ]
     }
 ];
@@ -741,36 +761,32 @@ window.toggleMobileMenu = () => {
 
 // --- SUBJECT MATERIALS SYSTEM ---
 const SUBJECT_DATA = {
-    cpp: {
-        title: "C++ Programming",
-        pdfs: ["Lecture 1: Basics.pdf", "Lecture 2: OOP Principles.pdf", "STL Reference.pdf"],
-        videos: ["C++ Intro", "Classes & Objects", "Pointers Explained"],
-        exams: ["Midterm 2023.pdf", "Final 2023.pdf"]
+    math2: { title: "رياضيات 2", chapters: [{ name: "Chapter 1" }, { name: "Chapter 2" }, { name: "Chapter 3" }, { name: "Chapter 4" }, { name: "Chapter 5" }] },
+    prog2: { title: "برمجة 2", chapters: [{ name: "Chapter 1" }, { name: "Chapter 2" }, { name: "Chapter 3" }, { name: "Chapter 4" }, { name: "Chapter 5" }] },
+    discrete: {
+        title: "تراكيب محددة",
+        chapters: [
+            { name: "Chapter 1", file: "Chapter 1 Set theory.pdf" },
+            { name: "Chapter 2" },
+            { name: "Chapter 3" },
+            { name: "Chapter 4" },
+            { name: "Chapter 5" }
+        ],
+        playlists: [
+            { name: "Playlist 1 (Discrete Math)", url: "https://youtube.com/playlist?list=PLntliy4I5XRzm0hS26MvTknK1RlCnlIe7&si=jpNHIlbyLjclwO29" },
+            { name: "Playlist 2 (Discrete Math)", url: "https://youtube.com/playlist?list=PLZEjCjHzGS_YmzjrYeM-bBgmeYF5riV7i&si=zF7PWzOezCh6l2zT" },
+            { name: "Playlist 3 (Discrete Math)", url: "https://youtube.com/playlist?list=PLtqeb2-_b-2BkG8-inm5ho_W7fZTZHrVt&si=lKzlG66ETakEtBpp" }
+        ],
+        tasks: [
+            {
+                name: "Task #1: Subset Checker",
+                content: "Write a C++ program that determines whether a given small array is a subset of a larger array. The program should compare the elements of both arrays and display an appropriate message indicating whether all elements of the small array are present in the large array."
+            }
+        ]
     },
-    dsa: {
-        title: "Data Structures",
-        pdfs: ["Linked Lists.pdf", "Trees & Graphs.pdf", "Sorting Algorithms.pdf"],
-        videos: ["DSA Intro", "Binary Trees", "Quick Sort Animation"],
-        exams: ["DSA Midterm.pdf"]
-    },
-    math: {
-        title: "Discrete Math",
-        pdfs: ["Logic & Proofs.pdf", "Set Theory.pdf"],
-        videos: ["Truth Tables", "Permutations"],
-        exams: ["Math Sheet 1.pdf"]
-    },
-    networks: {
-        title: "Computer Networks",
-        pdfs: ["OSI Model.pdf", "IP Addressing.pdf"],
-        videos: ["How Router Works", "TCP vs UDP"],
-        exams: ["Quiz 1.pdf"]
-    },
-    cyber: {
-        title: "Cyber Security",
-        pdfs: ["Ethical Hacking Intro.pdf", "Cryptography.pdf"],
-        videos: ["SQL Injection Demo", "Phishing Protection"],
-        exams: ["Cyber Final.pdf"]
-    }
+    social: { title: "قضايا اجتماعية", chapters: [{ name: "Chapter 1" }, { name: "Chapter 2" }, { name: "Chapter 3" }, { name: "Chapter 4" }, { name: "Chapter 5" }] },
+    reports: { title: "كتابة التقارير", chapters: [{ name: "Chapter 1" }, { name: "Chapter 2" }, { name: "Chapter 3" }, { name: "Chapter 4" }, { name: "Chapter 5" }] },
+    datacom: { title: "تراسل البيانات", chapters: [{ name: "Chapter 1" }, { name: "Chapter 2" }, { name: "Chapter 3" }, { name: "Chapter 4" }, { name: "Chapter 5" }] }
 };
 
 window.openSubject = (id) => {
@@ -779,37 +795,130 @@ window.openSubject = (id) => {
 
     document.getElementById('modalTitle').innerText = data.title;
 
-    // Inject PDFs
-    document.getElementById('pdfList').innerHTML = data.pdfs.map(file => `
-        <li class="resource-item">
-            <span><i class="fas fa-file-pdf"></i> ${file}</span>
-            <button class="btn-xs download">Download</button>
-        </li>
-    `).join('');
+    // Inject Playlists if available
+    const playlistList = document.getElementById('playlistList');
+    if (playlistList) {
+        if (data.playlists && data.playlists.length > 0) {
+            playlistList.innerHTML = data.playlists.map((pl, index) => `
+                <li class="resource-item">
+                    <span><i class="fab fa-youtube"></i> ${pl.name}</span>
+                    <button class="btn-xs watch" onclick="window.open('${pl.url}', '_blank')">Watch</button>
+                </li>
+                ${index < data.playlists.length - 1 ? '<div class="playlist-separator">OR</div>' : ''}
+            `).join('');
+        } else {
+            playlistList.innerHTML = `<li class="resource-item" style="opacity: 0.5; justify-content: center;"><span>No items in playlist yet</span></li>`;
+        }
+    }
 
-    // Inject Videos
-    document.getElementById('videoList').innerHTML = data.videos.map(title => `
-        <li class="resource-item">
-            <span><i class="fas fa-play-circle"></i> ${title}</span>
-            <button class="btn-xs watch">Watch</button>
-        </li>
-    `).join('');
+    // Inject Chapters 1-5
+    const chaptersList = document.getElementById('chaptersList');
+    if (chaptersList) {
+        chaptersList.innerHTML = data.chapters.map(ch => `
+            <li class="resource-item">
+                <span><i class="fas fa-folder-open"></i> ${ch.name}</span>
+                <button class="btn-xs download" onclick="${ch.file ? `window.open('${ch.file}', '_blank')` : "alert('قريباً.. الملف قيد الرفع')"}">Open</button>
+            </li>
+        `).join('');
+    }
 
-    // Inject Exams
-    document.getElementById('examList').innerHTML = data.exams.map(file => `
-        <li class="resource-item">
-            <span><i class="fas fa-file-alt"></i> ${file}</span>
-            <button class="btn-xs download">Download</button>
-        </li>
-    `).join('');
+    // Inject Tasks
+    const tasksList = document.getElementById('tasksList');
+    if (tasksList) {
+        if (data.tasks && data.tasks.length > 0) {
+            tasksList.innerHTML = data.tasks.map((task, index) => `
+                <li class="task-card">
+                    <div class="task-header" onclick="toggleTask(${index})" style="cursor: pointer;">
+                        <div class="task-title">
+                            <i class="fas fa-terminal"></i> ${task.name}
+                        </div>
+                        <div class="task-actions">
+                            <i id="taskChevron-${index}" class="fas fa-chevron-down task-chevron"></i>
+                            ${task.content ?
+                    `<button class="btn-copy-alt" onclick="event.stopPropagation(); copyToClipboard(\`${task.content}\`)">
+                                    <i class="fas fa-clone"></i> Copy
+                                </button>` :
+                    `<button class="btn-xs download" onclick="event.stopPropagation(); window.open('${task.file}', '_blank')">
+                                    <i class="fas fa-file-download"></i> Download
+                                </button>`
+                }
+                        </div>
+                    </div>
+                    ${task.content ? `
+                        <div id="taskContent-${index}" class="task-content-box" style="display: none;">
+                            ${task.content}
+                        </div>
+                    ` : ''}
+                </li>
+            `).join('');
+        } else {
+            tasksList.innerHTML = `<li class="resource-item" style="opacity: 0.5; justify-content: center;"><span>No tasks available yet</span></li>`;
+        }
+    }
 
     document.getElementById('subjectModal').style.display = 'flex';
 };
 
-// Close all modals on outside click
+window.toggleTask = (index) => {
+    const content = document.getElementById(`taskContent-${index}`);
+    const chevron = document.getElementById(`taskChevron-${index}`);
+    if (content.style.display === 'none') {
+        content.style.display = 'block';
+        content.style.animation = 'slideDown 0.3s ease-out';
+        chevron.style.transform = 'rotate(180deg)';
+    } else {
+        content.style.display = 'none';
+        chevron.style.transform = 'rotate(0deg)';
+    }
+};
+
+window.copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text).then(() => {
+        showToast("Task copied to clipboard!");
+    });
+};
+
+function showToast(message) {
+    const toast = document.createElement('div');
+    toast.className = 'toast-notification';
+    toast.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+    document.body.appendChild(toast);
+    setTimeout(() => {
+        toast.classList.add('fade-out');
+        setTimeout(() => toast.remove(), 500);
+    }, 3000);
+}
+
+window.togglePlaylist = () => {
+    const list = document.getElementById('playlistList');
+    const icon = document.getElementById('playlistChevron');
+    if (list.style.display === 'none' || !list.style.display) {
+        list.style.display = 'block';
+        icon.classList.remove('fa-chevron-down');
+        icon.classList.add('fa-chevron-up');
+    } else {
+        list.style.display = 'none';
+        icon.classList.remove('fa-chevron-up');
+        icon.classList.add('fa-chevron-down');
+    }
+};
+
+// Global click handler
 window.onclick = (event) => {
+    // 1. Close all modals on outside click
     const modals = document.querySelectorAll('.modal');
     modals.forEach(m => {
         if (event.target == m) m.style.display = 'none';
     });
+
+    // 2. Close mobile menu on outside click
+    const navLinks = document.querySelector('.nav-links');
+    const menuBtn = document.querySelector('.mobile-menu-btn');
+
+    // If menu is open AND click is NOT on the menu AND click is NOT on the menu button
+    if (navLinks.classList.contains('active') &&
+        !navLinks.contains(event.target) &&
+        !menuBtn.contains(event.target)) {
+        navLinks.classList.remove('active');
+    }
 };

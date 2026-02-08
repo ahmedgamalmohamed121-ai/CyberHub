@@ -55,10 +55,10 @@
             <span class="logo-text">CyberHub <span class="logo-sep">|</span> FCI.ZU</span>
         </div>
         <ul class="nav-links">
-            <li class="active" data-section="home">Home</li>
-            <li data-section="materials">Materials</li>
-            <li data-section="editor">Code Editor</li>
-            <li data-section="grades">Student Grades</li>
+            <li class="active" data-section="home"><i class="fas fa-home"></i> <span></span>Home</span></li>
+            <li data-section="materials"><i class="fas fa-book"></i> <span>Materials</span></li>
+            <li data-section="editor"><i class="fas fa-code"></i> <span>Code Editor</span></li>
+            <li data-section="grades"><i class="fas fa-graduation-cap"></i> <span>Student Grades</span></li>
         </ul>
 
         <div class="nav-actions">
@@ -171,30 +171,35 @@
             </div>
             <div class="subjects-grid">
                 <!-- Subject Cards -->
-                <div class="subject-card" onclick="openSubject('cpp')">
-                    <div class="subject-icon cpp"><i class="fab fa-cuttlefish"></i></div>
-                    <h3>C++ Programming</h3>
-                    <p>Syntax, OOP, STL & more</p>
+                <div class="subject-card" onclick="openSubject('math2')">
+                    <div class="subject-icon math"><i class="fas fa-calculator"></i></div>
+                    <h3>رياضيات 2</h3>
+                    <p>Calculus, Integration & more</p>
                 </div>
-                <div class="subject-card" onclick="openSubject('dsa')">
+                <div class="subject-card" onclick="openSubject('prog2')">
+                    <div class="subject-icon cpp"><i class="fas fa-laptop-code"></i></div>
+                    <h3>برمجة 2</h3>
+                    <p>OOP, Inheritance, File Handling</p>
+                </div>
+                <div class="subject-card" onclick="openSubject('discrete')">
                     <div class="subject-icon dsa"><i class="fas fa-project-diagram"></i></div>
-                    <h3>Data Structures</h3>
-                    <p>Arrays, Trees, Graphs</p>
+                    <h3>تراكيب محددة</h3>
+                    <p>Graphs, Combinatorics & Logic</p>
                 </div>
-                <div class="subject-card" onclick="openSubject('math')">
-                    <div class="subject-icon math"><i class="fas fa-square-root-alt"></i></div>
-                    <h3>Discrete Math</h3>
-                    <p>Logic, Sets, Probability</p>
+                <div class="subject-card" onclick="openSubject('social')">
+                    <div class="subject-icon networks"><i class="fas fa-users"></i></div>
+                    <h3>قضايا اجتماعية</h3>
+                    <p>Social Issues & Community</p>
                 </div>
-                <div class="subject-card" onclick="openSubject('networks')">
+                <div class="subject-card" onclick="openSubject('reports')">
+                    <div class="subject-icon cyber"><i class="fas fa-file-alt"></i></div>
+                    <h3>كتابة التقارير</h3>
+                    <p>Technical & Professional Writing</p>
+                </div>
+                <div class="subject-card" onclick="openSubject('datacom')">
                     <div class="subject-icon networks"><i class="fas fa-network-wired"></i></div>
-                    <h3>Computer Networks</h3>
-                    <p>OSI, TCP/IP, Routing</p>
-                </div>
-                <div class="subject-card" onclick="openSubject('cyber')">
-                    <div class="subject-icon cyber"><i class="fas fa-user-secret"></i></div>
-                    <h3>Cyber Security</h3>
-                    <p>Crypto, Ethical Hacking</p>
+                    <h3>تراسل البيانات</h3>
+                    <p>Data Transmission & Signals</p>
                 </div>
             </div>
 
@@ -205,35 +210,35 @@
                         onclick="document.getElementById('subjectModal').style.display='none'">&times;</span>
                     <h2 id="modalTitle">Subject Name</h2>
                     <div class="modal-body">
-                        <div class="resource-group">
-                            <h4><i class="fas fa-file-pdf"></i> PDF Files</h4>
-                            <ul id="pdfList">
-                                <li class="resource-item">
-                                    <span><i class="fas fa-file-pdf"></i> Lecture 1: Introduction.pdf</span>
-                                    <button class="btn-xs download">Download</button>
-                                </li>
-                                <li class="resource-item">
-                                    <span><i class="fas fa-file-pdf"></i> Lecture 2: Memory Mgmt.pdf</span>
-                                    <button class="btn-xs download">Download</button>
-                                </li>
-                            </ul>
-                        </div>
-                        <div class="resource-group">
-                            <h4><i class="fas fa-video"></i> Video Lessons</h4>
-                            <ul id="videoList">
-                                <li class="resource-item">
-                                    <span><i class="fas fa-play-circle"></i> Week 1: Basics</span>
-                                    <button class="btn-xs watch">Watch</button>
+                        <!-- Playlist Section (Empty as requested) -->
+                        <div class="resource-group playlist-group">
+                            <h4 onclick="togglePlaylist()"
+                                style="cursor: pointer; display: flex; align-items: center; justify-content: space-between;">
+                                <span><i class="fas fa-list-ul"></i> Playlist</span>
+                                <i id="playlistChevron" class="fas fa-chevron-down"
+                                    style="font-size: 0.9rem; opacity: 0.6;"></i>
+                            </h4>
+                            <ul id="playlistList" class="playlist-items" style="display: none;">
+                                <!-- Empty for now -->
+                                <li class="resource-item" style="opacity: 0.5; justify-content: center;">
+                                    <span>No items in playlist yet</span>
                                 </li>
                             </ul>
                         </div>
+
+                        <!-- Chapters Section -->
                         <div class="resource-group">
-                            <h4><i class="fas fa-tasks"></i> Exams & Sheets</h4>
-                            <ul id="examList">
-                                <li class="resource-item">
-                                    <span><i class="fas fa-file-alt"></i> Midterm 2024.pdf</span>
-                                    <a href="#" download="Midterm_2024.pdf" class="btn-xs download">Download</a>
-                                </li>
+                            <h4><i class="fas fa-book"></i> Chapters</h4>
+                            <ul id="chaptersList">
+                                <!-- Chapters 1-5 will be injected here via JS -->
+                            </ul>
+                        </div>
+
+                        <!-- Tasks Section -->
+                        <div class="resource-group">
+                            <h4><i class="fas fa-tasks"></i> Tasks & Assignments</h4>
+                            <ul id="tasksList">
+                                <!-- Tasks injected via JS -->
                             </ul>
                         </div>
                     </div>
@@ -423,16 +428,37 @@
 
     <!-- Support Modal -->
     <div id="supportModal" class="modal">
-        <div class="modal-content small-modal">
+        <div class="modal-content support-card-premium">
             <span class="close-modal" id="closeSupport">&times;</span>
-            <h2>Support CyberHub</h2>
-            <p>Help us keep the servers running and the content free!</p>
-            <div class="support-options">
-                <button class="btn-support et" onclick="copySupportNumber('01118770729', 'Etisalat Cash')"><i
-                        class="fas fa-mobile-alt"></i> Etisalat Cash</button>
+            <div class="support-header">
+                <div class="support-icon-wrapper">
+                    <i class="fas fa-heart"></i>
+                </div>
+                <h2>Support <span class="highlight">CyberHub</span></h2>
+                <p>Your contribution keeps the servers running 24/7 and the content free for everyone!</p>
             </div>
-            <p id="support-feedback"
-                style="margin-top:1rem; font-size:0.9rem; min-height:1.5em; color: var(--primary-green);"></p>
+
+            <div class="support-body">
+                <div class="payment-method-card" onclick="copySupportNumber('01118770729', 'Etisalat Cash')">
+                    <div class="method-info">
+                        <div class="method-icon-et">
+                            <i class="fas fa-mobile-alt"></i>
+                        </div>
+                        <div class="method-details">
+                            <span class="method-label">Etisalat Cash</span>
+                            <span class="method-number">01118770729</span>
+                        </div>
+                    </div>
+                    <button class="btn-copy-support"><i class="fas fa-copy"></i></button>
+                </div>
+
+                <div class="support-notice">
+                    <i class="fas fa-info-circle"></i>
+                    <span>Click on the card to copy the number instantly.</span>
+                </div>
+            </div>
+
+            <p id="support-feedback" class="support-feedback-text"></p>
         </div>
     </div>
 
