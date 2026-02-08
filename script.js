@@ -1415,24 +1415,29 @@ window.addMaterialToSubject = async () => {
 };
 
 async function loadAdminMaterials() {
+    const filterSubjectId = document.getElementById('adminSubjectSelect').value;
     const list = document.getElementById('adminMaterialsList');
     list.innerHTML = "";
 
-    for (const [subjId, data] of Object.entries(SUBJECT_DATA)) {
-        const group = document.createElement('div');
-        group.className = 'admin-subject-group';
-        group.innerHTML = `
-            <div class="admin-subject-header">
-                <i class="fas fa-folder"></i> ${data.title}
-            </div>
-            <div class="admin-subject-items">
-                ${(data.chapters || []).map((ch, i) => renderAdminMatItem(subjId, 'chapter', ch ? ch.name : "Chapter " + (i + 1), i)).join('')}
-                ${(data.playlists || []).map((pl, i) => renderAdminMatItem(subjId, 'playlist', pl.name, i)).join('')}
-                ${(data.tasks || []).map((tk, i) => renderAdminMatItem(subjId, 'task', tk.name, i)).join('')}
-            </div>
-        `;
-        list.appendChild(group);
+    const data = SUBJECT_DATA[filterSubjectId];
+    if (!data) {
+        list.innerHTML = '<p style="opacity:0.5; text-align:center;">Select a subject to manage its assets.</p>';
+        return;
     }
+
+    const group = document.createElement('div');
+    group.className = 'admin-subject-group';
+    group.innerHTML = `
+        <div class="admin-subject-header">
+            <i class="fas fa-folder-open"></i> Managing Materials for: ${data.title}
+        </div>
+        <div class="admin-subject-items">
+            ${(data.chapters || []).map((ch, i) => renderAdminMatItem(filterSubjectId, 'chapter', ch ? ch.name : "Chapter " + (i + 1), i)).join('')}
+            ${(data.playlists || []).map((pl, i) => renderAdminMatItem(filterSubjectId, 'playlist', pl.name, i)).join('')}
+            ${(data.tasks || []).map((tk, i) => renderAdminMatItem(filterSubjectId, 'task', tk.name, i)).join('')}
+        </div>
+    `;
+    list.appendChild(group);
 }
 
 function renderAdminMatItem(subjId, type, name, index) {
