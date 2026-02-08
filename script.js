@@ -398,14 +398,24 @@ async function executeCode() {
             return;
         }
 
-        // --- 3. SERVER-SIDE EXECUTION (Proxy) ---
-        const response = await fetch('/api/execute', {
+        // --- 3. DIRECT CLOUD EXECUTION (Judge0) ---
+        const url = `${JUDGE0_BASE_URL}/submissions?base64_encoded=false&wait=true`;
+        const headers = { 'content-type': 'application/json' };
+        if (RAPIDAPI_KEY) {
+            headers['x-rapidapi-key'] = RAPIDAPI_KEY;
+            headers['x-rapidapi-host'] = "judge0-ce.p.rapidapi.com";
+        }
+
+        const response = await fetch(url, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ language: currentLanguage, code: code })
+            headers: headers,
+            body: JSON.stringify({
+                language_id: LANGUAGE_IDS[currentLanguage],
+                source_code: code
+            })
         });
 
-        if (!response.ok) throw new Error("Server Error");
+        if (!response.ok) throw new Error("Cloud Error");
         const result = await response.json();
 
         let html = "";
