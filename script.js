@@ -651,14 +651,14 @@ async function askAIFix(f, card) {
     try {
         const prompt = `Act as an expert programming tutor. Language: ${currentLanguage}. Error Type: ${f.type}. Line: ${f.line}. Snippet: ${f.part}. Explanation: ${f.explanation_en}. Provide a concise fix in ${currentUIText === 'ar' ? 'Arabic' : 'English'}. Include code example.`;
 
-        const response = await fetch('/api/ai-explain', {
+        const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyB9RzOyfKA16uBnh4sZv3hpJp6fZUrhJiI', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt: prompt })
+            
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
         });
 
         const data = await response.json();
-        const aiText = data.text || "AI Service unavailable.";
+        const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || "AI Error";
 
         feedback.remove();
         const aiResult = document.createElement('div');
@@ -667,7 +667,7 @@ async function askAIFix(f, card) {
         card.appendChild(aiResult);
     } catch (e) {
         feedback.remove();
-        showToast("Server AI Error: " + e.message);
+        showToast("AI Error: " + e.message);
     }
 }
 
