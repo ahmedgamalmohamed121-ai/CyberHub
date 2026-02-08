@@ -390,7 +390,9 @@ async function executeCode() {
             outputConsole.innerHTML = `> ${result.stdout.replace(/\n/g, '<br>') || '<span class="info">(No output)</span>'}`;
             if (result.stderr) {
                 outputConsole.innerHTML += `<br><span class="error">${result.stderr}</span>`;
-                analyzeErrors(result.stderr, code);
+                const isRealError = /error|exception|referenceerror|syntaxerror|typeerror/i.test(result.stderr);
+                if (isRealError) analyzeErrors(result.stderr, code);
+                else document.getElementById('smartFixContainer').innerHTML = `<div class="empty-state">✅ Healthy Code! (Minor info in stderr)</div>`;
             } else {
                 document.getElementById('smartFixContainer').innerHTML = `<div class="empty-state">✅ Healthy Code! No errors found.</div>`;
             }
@@ -403,7 +405,10 @@ async function executeCode() {
             outputConsole.innerHTML = `> ${result.stdout.replace(/\n/g, '<br>') || '<span class="info">(No output)</span>'}`;
             if (result.stderr) {
                 outputConsole.innerHTML += `<br><span class="error">${result.stderr}</span>`;
-                analyzeErrors(result.stderr, code);
+                // Only analyze if it actually looks like an error
+                const isRealError = /error|exception|traceback|failed/i.test(result.stderr);
+                if (isRealError) analyzeErrors(result.stderr, code);
+                else document.getElementById('smartFixContainer').innerHTML = `<div class="empty-state">✅ Healthy Code! (Minor info in stderr)</div>`;
             } else {
                 document.getElementById('smartFixContainer').innerHTML = `<div class="empty-state">✅ Healthy Code! No errors found.</div>`;
             }
@@ -474,13 +479,16 @@ async function executeCodeWithFallback(code) {
 function analyzeErrors(rawError, code) {
     const smartContainer = document.getElementById('smartFixContainer');
     const findings = runRuleEngine(rawError, code, currentLanguage);
-    document.getElementById('errorCount').innerText = findings.length;
+    const realErrors = findings.filter(f => f.type !== 'Structure Warning'); // Optional: don't count warnings in badge
+    document.getElementById('errorCount').innerText = realErrors.length;
     smartContainer.innerHTML = "";
     if (findings.length > 0) {
         findings.forEach(f => smartContainer.appendChild(createFixCard(f)));
-        document.getElementById('smartTab').classList.add('pulse');
-        setTimeout(() => document.getElementById('smartTab').classList.remove('pulse'), 2000);
-    } else smartContainer.innerHTML = `<div class="empty-state">✅ Healthy Code!</div>`;
+        if (realErrors.length > 0) {
+            document.getElementById('smartTab').classList.add('pulse');
+            setTimeout(() => document.getElementById('smartTab').classList.remove('pulse'), 2000);
+        }
+    } else smartContainer.innerHTML = `<div class="empty-state">✅ Healthy Code! No errors.</div>`;
 }
 
 function runRuleEngine(err, code, lang) {
@@ -517,12 +525,18 @@ function runRuleEngine(err, code, lang) {
         });
 
         if (results.length === 0 && err.trim().length > 0) {
-            results.push({
-                type: 'General Error', line: '?', part: "Compiler Output",
-                explanation_ar: "في مشكلة في الكود بس مش قادرين نحدد السطر بالظبط.",
-                explanation_en: err.split('\n')[0] || "Unknown compiler error.",
-                suggestion: "", tip_ar: "استخدم الذكاء الاصطناعي عشان تفهم المشكلة."
-            });
+            // Noise filter to avoid showing cards for progress or success messages
+            const noiseKeywords = ['loading', 'downloading', 'pyodide', 'success', 'warning: '];
+            const isActuallyError = !noiseKeywords.some(n => err.toLowerCase().includes(n)) || err.toLowerCase().includes('failed');
+
+            if (isActuallyError) {
+                results.push({
+                    type: 'Compiler Notification', line: '?', part: "Internal Message",
+                    explanation_ar: `المترجم أخرج تنبيه: ${err.split('\n')[0]}`,
+                    explanation_en: err,
+                    suggestion: "", tip_ar: "استخدم الذكاء الاصطناعي لفهم التنبيه التقني."
+                });
+            }
         }
         if (results.length > 0) return results;
     }
@@ -641,7 +655,12 @@ function createFixCard(f) {
     const h = document.createElement('div'); h.className = 'fix-header';
     h.innerHTML = `<div class="fix-title"><i class="fas fa-exclamation-triangle"></i> ${f.type}</div><div class="fix-location">Line ${f.line}</div>`;
     const e = document.createElement('div'); e.className = 'fix-explanation';
-    e.innerText = currentUIText === 'ar' ? f.explanation_ar : f.explanation_en;
+    e.innerHTML = `<div>${currentUIText === 'ar' ? f.explanation_ar : f.explanation_en}</div>`;
+
+    // For technical/general errors, show the raw English output as well
+    if (f.explanation_en && currentUIText === 'ar' && (f.type === 'Compiler Notification' || f.line === '?')) {
+        e.innerHTML += `<div style="font-size: 0.85em; opacity: 0.7; margin-top: 8px; font-family: 'Consolas', monospace; direction: ltr; text-align: left; background: rgba(0,0,0,0.2); padding: 5px; border-radius: 4px;">Technical: ${f.explanation_en}</div>`;
+    }
 
     card.appendChild(h);
     card.appendChild(e);
