@@ -3983,6 +3983,7 @@ footer {
 .light-mode .btn-copy-support {
     color: #64748b;
 }
+
 /* --- AI SMART FIX STYLES --- */
 .fix-actions {
     display: flex;
@@ -3992,100 +3993,33 @@ footer {
     border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.btn-ai-explain {
-    background: rgba(138, 75, 255, 0.1);
-    color: #a78bfa;
-    border: 1px solid rgba(138, 75, 255, 0.2);
-    padding: 6px 12px;
-    border-radius: 8px;
+
+
+.main-explanation {
+    font-weight: 600;
+    font-size: 1.05rem;
+    margin-bottom: 8px;
+    color: #fff;
+}
+
+.technical-msg {
     font-size: 0.85rem;
-    cursor: pointer;
-    transition: all 0.3s;
-    display: flex;
-    align-items: center;
-    gap: 6px;
+    opacity: 0.7;
+    font-family: 'Consolas', monospace;
+    direction: ltr;
+    text-align: left;
+    background: rgba(0, 0, 0, 0.25);
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.btn-ai-explain:hover {
-    background: rgba(138, 75, 255, 0.2);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(138, 75, 255, 0.2);
-}
-
-.ai-loading {
-    margin-top: 1rem;
-    padding: 1rem;
-    background: rgba(255, 255, 255, 0.02);
-    border-radius: 12px;
-    font-size: 0.85rem;
-    color: #94a3b8;
-    text-align: center;
-}
-
-.ai-result-box {
-    margin-top: 1rem;
-    background: rgba(20, 24, 39, 0.8);
-    border: 1px solid rgba(138, 75, 255, 0.3);
-    border-radius: 12px;
-    overflow: hidden;
-    animation: slideInUp 0.3s ease-out;
-}
-
-@keyframes slideInUp {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.ai-result-header {
-    background: rgba(138, 75, 255, 0.1);
-    padding: 8px 12px;
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: #c4b5fd;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    border-bottom: 1px solid rgba(138, 75, 255, 0.1);
-}
-
-.ai-text {
-    padding: 12px;
-    font-size: 0.9rem;
-    line-height: 1.6;
-    color: #e2e8f0;
-}
-
-.ai-text p { margin-bottom: 0.75rem; }
-.ai-text code {
-    background: rgba(0, 0, 0, 0.3);
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-family: "JetBrains Mono", monospace;
-    color: #00f3ff;
-}
-
-/* Light Mode AI */
-.light-mode .ai-result-box {
-    background: #f8faff;
-    border-color: #ddd6fe;
-}
-
-.light-mode .ai-result-header {
-    background: #ede9fe;
-    color: #6d28d9;
-}
-
-.light-mode .ai-text {
+.light-mode .main-explanation {
     color: #1e293b;
 }
 
-.light-mode .btn-ai-explain {
-    background: #f5f3ff;
-    color: #7c3aed;
-    border-color: #ddd6fe;
+.light-mode .technical-msg {
+    background: rgba(0, 0, 0, 0.05);
+    color: #475569;
+    border-color: rgba(0, 0, 0, 0.1);
 }
-
-.main-explanation { font-weight: 600; font-size: 1.05rem; margin-bottom: 8px; color: #fff; }
-.technical-msg { font-size: 0.85rem; opacity: 0.7; font-family: 'Consolas', monospace; direction: ltr; text-align: left; background: rgba(0,0,0,0.25); padding: 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05); }
-.light-mode .main-explanation { color: #1e293b; }
-.light-mode .technical-msg { background: rgba(0,0,0,0.05); color: #475569; border-color: rgba(0,0,0,0.1); }

@@ -538,10 +538,12 @@ function runRuleEngine(err, code, lang) {
                     explanation_ar: translated ? `المشكلة: ${translated}` : `المترجم اكتشف خطأ: ${cleanMsg}`,
                     explanation_en: `Compiler found: ${cleanMsg}`,
                     suggestion: "",
-                    tip_ar: "اضغط على زرار الذكاء الاصطناعي لو عايز حل مفصل للسطر ده بالظبط."
+                    tip_ar: "راجع السطر ده في كودك واتأكد من قواعد اللغة."
                 });
             }
         });
+
+        if (results.length > 0) return results; // If we found real compiler errors, STOP HERE to avoid false positives from guesses.
 
         if (results.length === 0 && err.trim().length > 0) {
             const noiseKeywords = ['loading', 'downloading', 'pyodide', 'success', 'warning: '];
@@ -552,7 +554,7 @@ function runRuleEngine(err, code, lang) {
                     type: 'Compiler Notification', line: '?', part: "Internal Message",
                     explanation_ar: `المترجم أخرج تنبيه: ${err.split('\n')[0]}`,
                     explanation_en: err,
-                    suggestion: "", tip_ar: "استخدم الذكاء الاصطناعي لفهم التنبيه التقني."
+                    suggestion: "", tip_ar: "تأكد من هيكلة الكود بشكل صحيح حسب لغة البرمجة."
                 });
             }
         }
@@ -560,7 +562,7 @@ function runRuleEngine(err, code, lang) {
 
     // --- 2. OPTIONAL STATIC ANALYSIS (Run ALWAYS to merge with compiler errors) ---
     const hasMain = code.includes('main') || code.includes('function') || code.includes('<?php') || lang === 'python' || lang === 'javascript';
-    if (!hasMain && code.trim().length > 50) {
+    if (results.length === 0 && !hasMain && code.trim().length > 50) {
         results.push({
             type: 'Structure Warning', line: 1, part: "Code Structure",
             explanation_ar: "الكود بتاعك ملوش بداية واضحة (زي main).",
@@ -693,55 +695,14 @@ function createFixCard(f) {
 
         const tip = document.createElement('div');
         tip.className = 'fix-tip';
-        tip.innerHTML = `<i class="fas fa-lightbulb"></i> ${currentUIText === 'ar' ? 'صلح السطر ده زي اللي فوق عشان الكود يشتغل.' : 'Fix this line following the suggestion.'}`;
+        tip.innerHTML = `<i class="fas fa-lightbulb"></i> ${currentUIText === 'ar' ? 'يمكنك استخدام الاقتراح أعلاه لتصحيح الخطأ.' : 'You can use the suggestion above to fix the error.'}`;
 
         card.appendChild(s);
         card.appendChild(tip);
     }
 
-    // AI Explanation Button
-    const aiBtn = document.createElement('button');
-    aiBtn.className = 'btn-ai-explain';
-    aiBtn.innerHTML = `<i class="fas fa-brain"></i> ${currentUIText === 'ar' ? 'شرح بالذكاء الاصطناعي' : 'Explain with AI'}`;
-    aiBtn.onclick = () => askAIFix(f, card);
-    actions.appendChild(aiBtn);
 
-    card.appendChild(actions);
     return card;
-}
-
-async function askAIFix(f, card) {
-    const aiKey = "AIzaSyB9RzOyfKA16uBnh4sZv3hpJp6fZUrhJiI";
-    const feedback = document.createElement('div');
-    feedback.className = 'ai-loading';
-    feedback.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${currentUIText === 'ar' ? 'جاري التحليل من Cyber AI...' : 'Analyzing with Cyber AI...'}`;
-    card.appendChild(feedback);
-
-    try {
-        const prompt = `Act as an expert programming tutor. The compiler/engine reported this error in ${currentLanguage}:
-        "${f.explanation_en}" at line ${f.line}.
-        Code snippet on that line: ${f.part}
-        
-        Explain why this happened and how to fix it in ${currentUIText === 'ar' ? 'Arabic' : 'English'}. Keep it concise and educational (under 100 words). Use markdown.`;
-
-        const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyB9RzOyfKA16uBnh4sZv3hpJp6fZUrhJiI', {
-            method: 'POST',
-
-            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-        });
-
-        const data = await response.json();
-        const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || "AI Error";
-
-        feedback.remove();
-        const aiResult = document.createElement('div');
-        aiResult.className = 'ai-result-box';
-        aiResult.innerHTML = `<div class="ai-result-header"><i class="fas fa-robot"></i> Cyber AI</div><div class="ai-text">${aiText}</div>`;
-        card.appendChild(aiResult);
-    } catch (e) {
-        feedback.remove();
-        showToast("AI Error: " + e.message);
-    }
 }
 
 function updateUILanguage() {
