@@ -4023,3 +4023,116 @@ footer {
     color: #475569;
     border-color: rgba(0, 0, 0, 0.1);
 }
+
+/* Announcements Styles */
+.announcement-feed {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-top: 2rem;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.announcement-card {
+    background: var(--bg-card);
+    border: 1px solid rgba(0, 243, 255, 0.1);
+    border-radius: 12px;
+    padding: 1.5rem;
+    position: relative;
+    backdrop-filter: blur(10px);
+    animation: slideInUp 0.4s ease-out;
+}
+
+.announcement-card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: var(--primary-cyan);
+    border-radius: 4px 0 0 4px;
+}
+
+.announcement-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    font-size: 0.85rem;
+    color: var(--primary-cyan);
+    opacity: 0.8;
+}
+
+.announcement-time {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.announcement-body {
+    font-size: 1.05rem;
+    line-height: 1.6;
+    color: var(--text-main);
+    white-space: pre-wrap;
+}
+
+.announcement-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 3rem;
+    padding: 2rem;
+    background: rgba(0, 243, 255, 0.05);
+    border-radius: 16px;
+    border: 1px dashed rgba(0, 243, 255, 0.2);
+}
+
+.status-text {
+    font-size: 0.9rem;
+    opacity: 0.7;
+}
+
+.pulse-btn {
+    animation: btnPulseGlow 2s infinite;
+}
+
+@keyframes btnPulseGlow {
+    0% {
+        box-shadow: 0 0 0 0 rgba(0, 243, 255, 0.4);
+    }
+
+    70% {
+        box-shadow: 0 0 0 10px rgba(0, 243, 255, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(0, 243, 255, 0);
+    }
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.loading-state {
+    text-align: center;
+    padding: 3rem;
+    opacity: 0.6;
+}
+
+.loading-state i {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+}

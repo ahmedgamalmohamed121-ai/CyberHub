@@ -4,6 +4,9 @@ const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
 const axios = require('axios');
+const fs = require('fs').promises;
+const path = require('path');
+const crypto = require('crypto');
 
 const app = express();
 app.use(cors());
@@ -24,6 +27,24 @@ const JUDGE0_URL = process.env.JUDGE0_API_URL || 'https://judge0-ce.p.rapidapi.c
 const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY;
 const RAPIDAPI_HOST = process.env.RAPIDAPI_HOST;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+
+// Telegram & Notifications Config
+const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
+const ADMIN_CHAT_IDS = (process.env.ADMIN_CHAT_IDS || "").split(',').map(id => id.trim());
+const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET || crypto.randomBytes(16).toString('hex');
+const FCM_SERVER_KEY = process.env.FCM_SERVER_KEY; // Legacy key or use Service Account for V1
+
+const ANNOUNCEMENTS_FILE = path.join(__dirname, 'data', 'announcements.json');
+const SUBSCRIBERS_FILE = path.join(__dirname, 'data', 'subscribers.json');
+
+// Ensure data directory exists
+async function initStorage() {
+    const dir = path.join(__dirname, 'data');
+    try { await fs.access(dir); } catch { await fs.mkdir(dir); }
+    try { await fs.access(ANNOUNCEMENTS_FILE); } catch { await fs.writeFile(ANNOUNCEMENTS_FILE, '[]'); }
+    try { await fs.access(SUBSCRIBERS_FILE); } catch { await fs.writeFile(SUBSCRIBERS_FILE, '[]'); }
+}
+initStorage();
 
 const LANGUAGE_IDS = {
     'python': 71,   // Python 3.8.1
@@ -112,6 +133,109 @@ app.post('/api/ai-explain', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
+// --- ANNOUNCEMENTS & TELEGRAM WEBHOOK ---
+
+app.get('/api/announcements', async (req, res) => {
+    try {
+        const data = await fs.readFile(ANNOUNCEMENTS_FILE, 'utf8');
+        const announcements = JSON.parse(data);
+        res.json(announcements.slice(-20).reverse()); // Return last 20
+    } catch (err) {
+        res.status(500).json({ error: "Failed to read announcements" });
+    }
+});
+
+app.post('/api/subscribe', async (req, res) => {
+    const { token } = req.body;
+    if (!token) return res.status(400).json({ error: "Token required" });
+
+    try {
+        const data = await fs.readFile(SUBSCRIBERS_FILE, 'utf8');
+        let subs = JSON.parse(data);
+        if (!subs.includes(token)) {
+            subs.push(token);
+            await fs.writeFile(SUBSCRIBERS_FILE, JSON.stringify(subs));
+        }
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: "Subscription failed" });
+    }
+});
+
+app.post('/telegram-webhook', async (req, res) => {
+    // Basic Security: Check secret header if provided by TG or custom
+    const tgSecret = req.headers['x-telegram-bot-api-secret-token'];
+    if (WEBHOOK_SECRET && tgSecret !== WEBHOOK_SECRET) {
+        // Optional: you can set this when calling setWebhook
+        // For now, let's at least check the chat ID
+    }
+
+    const { message } = req.body;
+    if (!message || !message.text) return res.sendStatus(200);
+
+    // ONLY accept from Admins
+    if (!ADMIN_CHAT_IDS.includes(String(message.chat.id))) {
+        console.warn(`Unauthorized access from Chat ID: ${message.chat.id}`);
+        return res.sendStatus(200);
+    }
+
+    const text = message.text.trim();
+    if (text.length === 0 || text.length > 2000) return res.sendStatus(200);
+
+    const announcement = {
+        id: Date.now(),
+        text: text,
+        created_at: new Date().toISOString(),
+        source: "telegram"
+    };
+
+    try {
+        // 1. Save announcement
+        const data = await fs.readFile(ANNOUNCEMENTS_FILE, 'utf8');
+        let announcements = JSON.parse(data);
+        announcements.push(announcement);
+        await fs.writeFile(ANNOUNCEMENTS_FILE, JSON.stringify(announcements));
+
+        // 2. Emit via Socket.io for real-time update
+        io.emit('new_announcement', announcement);
+
+        // 3. Send Push Notifications
+        sendPushNotifications(announcement.text);
+
+        res.sendStatus(200);
+    } catch (err) {
+        console.error("Webhook Error:", err);
+        res.sendStatus(500);
+    }
+});
+
+async function sendPushNotifications(text) {
+    if (!FCM_SERVER_KEY) return;
+    try {
+        const data = await fs.readFile(SUBSCRIBERS_FILE, 'utf8');
+        const tokens = JSON.parse(data);
+        if (tokens.length === 0) return;
+
+        // Using Legacy FCM API for simplicity (no oauth2 flow needed here)
+        await axios.post('https://fcm.googleapis.com/fcm/send', {
+            registration_ids: tokens,
+            notification: {
+                title: "CyberHub Announcement 📢",
+                body: text.length > 100 ? text.substring(0, 97) + "..." : text,
+                icon: "/favicon.ico",
+                click_action: "https://" + (process.env.DOMAIN || "localhost:3000") + "/#announcements"
+            }
+        }, {
+            headers: {
+                'Authorization': `key=${FCM_SERVER_KEY}`,
+                'Content-Type': 'application/json'
+            }
+        });
+    } catch (err) {
+        console.error("FCM Error:", err.response ? err.response.data : err.message);
+    }
+}
 
 app.post('/api/update', (req, res) => {
     const { type, subject, fileName, name } = req.body;

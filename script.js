@@ -759,6 +759,11 @@ function showSection(id) {
     if (id === 'editor' && editor) {
         setTimeout(() => editor.layout(), 50);
     }
+
+    // Load announcements when entering section
+    if (id === 'announcements') {
+        loadAnnouncements();
+    }
 }
 
 function toggleTheme() {
@@ -1056,3 +1061,114 @@ window.onclick = (event) => {
         navLinks.classList.remove('active');
     }
 };
+
+// --- ANNOUNCEMENTS LOGIC ---
+const socket = io();
+
+socket.on('new_announcement', (announcement) => {
+    addAnnouncementToFeed(announcement, true);
+    if (document.getElementById('announcements').style.display === 'block') {
+        // Already on page
+    } else {
+        showToast("New Announcement! 📢");
+    }
+});
+
+async function loadAnnouncements() {
+    const feed = document.getElementById('announcementFeed');
+    try {
+        const response = await fetch('/api/announcements');
+        const announcements = await response.json();
+        feed.innerHTML = "";
+        if (announcements.length === 0) {
+            feed.innerHTML = `<div class="empty-state"><i class="fas fa-bullhorn"></i><p>No announcements yet.</p></div>`;
+            return;
+        }
+        announcements.forEach(a => addAnnouncementToFeed(a, false));
+    } catch (err) {
+        feed.innerHTML = `<div class="error-state"><p>Failed to load announcements.</p></div>`;
+    }
+}
+
+function addAnnouncementToFeed(a, isNew) {
+    const feed = document.getElementById('announcementFeed');
+    const card = document.createElement('div');
+    card.className = 'announcement-card';
+    if (isNew) card.style.borderColor = 'var(--primary-green)';
+
+    const header = document.createElement('div');
+    header.className = 'announcement-header';
+
+    const time = new Date(a.created_at).toLocaleString();
+    header.innerHTML = `
+        <div class="announcement-time"><i class="fas fa-clock"></i> ${time}</div>
+        <div class="announcement-source">via Telegram</div>
+    `;
+
+    const body = document.createElement('div');
+    body.className = 'announcement-body';
+    body.textContent = a.text;
+
+    card.appendChild(header);
+    card.appendChild(body);
+
+    if (isNew) feed.prepend(card);
+    else feed.appendChild(card);
+}
+
+// --- PUSH NOTIFICATIONS (FCM) ---
+// Instructions: Add your Firebase config here
+const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_AUTH_DOMAIN",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_STORAGE_BUCKET",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+};
+
+let messaging = null;
+if (typeof firebase !== 'undefined') {
+    firebase.initializeApp(firebaseConfig);
+    messaging = firebase.messaging();
+}
+
+async function setupNotifications() {
+    const btn = document.getElementById('enableNotifications');
+    const status = document.getElementById('notificationStatus');
+
+    if (!messaging) {
+        status.textContent = "Notifications not supported on this browser.";
+        return;
+    }
+
+    try {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+            const token = await messaging.getToken({ vapidKey: 'YOUR_VAPID_KEY' });
+            if (token) {
+                // Send to backend
+                await fetch('/api/subscribe', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token })
+                });
+                btn.style.display = 'none';
+                status.textContent = "✅ Notifications enabled!";
+                status.style.color = "var(--primary-green)";
+            }
+        } else {
+            status.textContent = "Notifications blocked.";
+        }
+    } catch (err) {
+        console.error("FCM Setup Error:", err);
+        status.textContent = "Error enabling notifications.";
+    }
+}
+
+document.getElementById('enableNotifications').addEventListener('click', setupNotifications);
+
+// Initial load check
+if (window.location.hash === '#announcements') {
+    showSection('announcements');
+}
