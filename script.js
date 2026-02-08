@@ -845,22 +845,25 @@ document.getElementById('closeSchedulePreview')?.addEventListener('click', () =>
     document.getElementById('schedulePreviewModal').style.display = 'none';
 });
 
-// --- STUDENT GRADES SYSTEM (Mock Database) ---
-const MOCK_STUDENTS = [
+// --- STUDENT GRADES SYSTEM (Dynamic Database) ---
+let STUDENT_DATA_LIST = [
     {
         id: "2021001", name: "Ahmed Gamal", gpa: "3.8", grades: [
             { subject: "رياضيات 2", degree: "95", grade: "A+", points: "4.0" },
             { subject: "برمجة 2", degree: "88", grade: "A", points: "3.7" },
             { subject: "تراكيب محددة", degree: "92", grade: "A+", points: "4.0" }
         ]
-    },
-    {
-        id: "2021002", name: "Sara Mohamed", gpa: "3.5", grades: [
-            { subject: "تراسل البيانات", degree: "85", grade: "A-", points: "3.4" },
-            { subject: "قضايا اجتماعية", degree: "90", grade: "A", points: "3.7" }
-        ]
     }
 ];
+
+async function fetchAllGrades() {
+    try {
+        const response = await fetch('/api/grades');
+        const data = await response.json();
+        if (data && data.length > 0) STUDENT_DATA_LIST = data;
+    } catch (err) { console.error("Could not fetch grades from server."); }
+}
+fetchAllGrades();
 
 window.searchGrades = () => {
     const query = document.getElementById('studentSearch').value.trim();
@@ -868,7 +871,7 @@ window.searchGrades = () => {
     const placeholder = document.getElementById('gradesPlaceholder');
     const tableBody = document.getElementById('gradesTableBody');
 
-    const student = MOCK_STUDENTS.find(s => s.id === query || s.name.toLowerCase().includes(query.toLowerCase()));
+    const student = STUDENT_DATA_LIST.find(s => s.id === query || s.name.toLowerCase().includes(query.toLowerCase()));
 
     if (student) {
         document.getElementById('resStudentName').textContent = student.name;
@@ -898,9 +901,9 @@ window.toggleMobileMenu = () => {
 };
 
 // --- SUBJECT MATERIALS SYSTEM ---
-const SUBJECT_DATA = {
-    math2: { title: "رياضيات 2", chapters: [{ name: "Chapter 1" }, { name: "Chapter 2" }, { name: "Chapter 3" }, { name: "Chapter 4" }, { name: "Chapter 5" }] },
-    prog2: { title: "برمجة 2", chapters: [{ name: "Chapter 1" }, { name: "Chapter 2" }, { name: "Chapter 3" }, { name: "Chapter 4" }, { name: "Chapter 5" }] },
+let SUBJECT_DATA = {
+    math2: { title: "رياضيات 2", chapters: [{ name: "Chapter 1" }, { name: "Chapter 2" }, { name: "Chapter 3" }, { name: "Chapter 4" }, { name: "Chapter 5" }], playlists: [], tasks: [] },
+    prog2: { title: "برمجة 2", chapters: [{ name: "Chapter 1" }, { name: "Chapter 2" }, { name: "Chapter 3" }, { name: "Chapter 4" }, { name: "Chapter 5" }], playlists: [], tasks: [] },
     discrete: {
         title: "تراكيب محددة",
         chapters: [
@@ -922,10 +925,22 @@ const SUBJECT_DATA = {
             }
         ]
     },
-    social: { title: "قضايا اجتماعية", chapters: [{ name: "Chapter 1" }, { name: "Chapter 2" }, { name: "Chapter 3" }, { name: "Chapter 4" }, { name: "Chapter 5" }] },
-    reports: { title: "كتابة التقارير", chapters: [{ name: "Chapter 1" }, { name: "Chapter 2" }, { name: "Chapter 3" }, { name: "Chapter 4" }, { name: "Chapter 5" }] },
-    datacom: { title: "تراسل البيانات", chapters: [{ name: "Chapter 1" }, { name: "Chapter 2" }, { name: "Chapter 3" }, { name: "Chapter 4" }, { name: "Chapter 5" }] }
+    social: { title: "قضايا اجتماعية", chapters: [{ name: "Chapter 1" }, { name: "Chapter 2" }, { name: "Chapter 3" }, { name: "Chapter 4" }, { name: "Chapter 5" }], playlists: [], tasks: [] },
+    reports: { title: "كتابة التقارير", chapters: [{ name: "Chapter 1" }, { name: "Chapter 2" }, { name: "Chapter 3" }, { name: "Chapter 4" }, { name: "Chapter 5" }], playlists: [], tasks: [] },
+    datacom: { title: "تراسل البيانات", chapters: [{ name: "Chapter 1" }, { name: "Chapter 2" }, { name: "Chapter 3" }, { name: "Chapter 4" }, { name: "Chapter 5" }], playlists: [], tasks: [] }
 };
+
+async function loadMaterials() {
+    try {
+        const response = await fetch('/api/materials');
+        const data = await response.json();
+        // Merge with defaults if needed, or just replace
+        if (Object.keys(data).length > 0) {
+            SUBJECT_DATA = { ...SUBJECT_DATA, ...data };
+        }
+    } catch (err) { console.error("Failed to load materials from server, using local defaults."); }
+}
+loadMaterials();
 
 window.openSubject = (id) => {
     const data = SUBJECT_DATA[id];
@@ -1202,10 +1217,11 @@ window.submitAdminLogin = async () => {
             showSection('admin');
             showToast("Welcome Admin");
         } else {
-            alert("Wrong Password");
+            alert("❌ Login Failed: " + (data.error || "Incorrect Password"));
         }
     } catch (err) {
-        showToast("Error logging in");
+        console.error("Login Error:", err);
+        alert("⚠️ Connection Error: Is the server running? Check console for details.");
     }
 };
 
@@ -1277,5 +1293,155 @@ window.showSection = (id) => {
         return;
     }
     if (typeof originalShowSection === 'function') originalShowSection(id);
-    if (id === 'admin') loadAdminAnnouncements();
+    if (id === 'admin') {
+        loadAdminAnnouncements();
+        loadAdminMaterials();
+        loadAdminGrades();
+    }
+};
+
+// --- ADMIN GRADES LOGIC ---
+window.addStudentGrade = async () => {
+    const id = document.getElementById('adminStudentId').value;
+    const name = document.getElementById('adminStudentName').value;
+    const gpa = document.getElementById('adminStudentGPA').value;
+    const gradesJSON = document.getElementById('adminStudentGradesJSON').value;
+
+    if (!id || !name || !gradesJSON) return showToast("ID, Name, and Grades are required");
+
+    try {
+        const grades = JSON.parse(gradesJSON);
+        const student = { id, name, gpa, grades };
+
+        const response = await fetch('/api/admin/grade', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-admin-token': adminToken
+            },
+            body: JSON.stringify({ student })
+        });
+        const data = await response.json();
+        if (data.success) {
+            showToast("Student Record Saved");
+            document.getElementById('adminStudentId').value = "";
+            document.getElementById('adminStudentName').value = "";
+            document.getElementById('adminStudentGPA').value = "";
+            document.getElementById('adminStudentGradesJSON').value = "";
+            await fetchAllGrades();
+            loadAdminGrades();
+        }
+    } catch (err) { showToast("Invalid JSON or Server Error"); }
+};
+
+async function loadAdminGrades() {
+    const list = document.getElementById('adminGradesList');
+    list.innerHTML = STUDENT_DATA_LIST.map(s => `
+        <div class="admin-item">
+            <div class="item-text">
+                <strong>[${s.id}]</strong> ${escapeHTML(s.name)} (GPA: ${s.gpa})
+            </div>
+            <button class="btn-delete" onclick="deleteStudentGrade('${s.id}')"><i class="fas fa-trash"></i></button>
+        </div>
+    `).join('') || '<p style="opacity:0.5;">No student records found.</p>';
+}
+
+window.deleteStudentGrade = async (id) => {
+    if (!confirm(`Delete student record for ID: ${id}?`)) return;
+    try {
+        const response = await fetch(`/api/admin/grade/${id}`, {
+            method: 'DELETE',
+            headers: { 'x-admin-token': adminToken }
+        });
+        if (response.ok) {
+            showToast("Student record deleted");
+            await fetchAllGrades();
+            loadAdminGrades();
+        }
+    } catch (err) { showToast("Delete failed"); }
+};
+
+// --- ADMIN MATERIALS LOGIC ---
+window.addMaterialToSubject = async () => {
+    const subjectId = document.getElementById('adminSubjectSelect').value;
+    const type = document.getElementById('adminMaterialType').value;
+    const name = document.getElementById('adminMatName').value;
+    const url = document.getElementById('adminMatUrl').value;
+    const content = document.getElementById('adminMatContent').value;
+
+    if (!name.trim()) return showToast("Name is required");
+
+    const materialData = { name };
+    if (url.trim()) {
+        if (type === 'chapter') materialData.file = url;
+        else materialData.url = url;
+    }
+    if (type === 'task' && content.trim()) materialData.content = content;
+
+    try {
+        const response = await fetch('/api/admin/material', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-admin-token': adminToken
+            },
+            body: JSON.stringify({ subjectId, material: { type, data: materialData } })
+        });
+        const data = await response.json();
+        if (data.success) {
+            showToast(`Added to ${subjectId}`);
+            // Reset fields
+            document.getElementById('adminMatName').value = "";
+            document.getElementById('adminMatUrl').value = "";
+            document.getElementById('adminMatContent').value = "";
+            await loadMaterials();
+            loadAdminMaterials();
+        }
+    } catch (err) { showToast("Action failed"); }
+};
+
+async function loadAdminMaterials() {
+    const list = document.getElementById('adminMaterialsList');
+    list.innerHTML = "";
+
+    for (const [subjId, data] of Object.entries(SUBJECT_DATA)) {
+        const group = document.createElement('div');
+        group.className = 'admin-subject-group';
+        group.innerHTML = `
+            <div class="admin-subject-header">
+                <i class="fas fa-folder"></i> ${data.title}
+            </div>
+            <div class="admin-subject-items">
+                ${(data.chapters || []).map((ch, i) => renderAdminMatItem(subjId, 'chapter', ch.name, i)).join('')}
+                ${(data.playlists || []).map((pl, i) => renderAdminMatItem(subjId, 'playlist', pl.name, i)).join('')}
+                ${(data.tasks || []).map((tk, i) => renderAdminMatItem(subjId, 'task', tk.name, i)).join('')}
+            </div>
+        `;
+        list.appendChild(group);
+    }
+}
+
+function renderAdminMatItem(subjId, type, name, index) {
+    const icon = type === 'chapter' ? 'fa-file-pdf' : (type === 'playlist' ? 'fa-video' : 'fa-tasks');
+    return `
+        <div class="admin-item" style="margin-left: 20px; border-left: 2px solid rgba(255,255,255,0.1); padding-left: 10px;">
+            <div class="item-text"><i class="fas ${icon}" style="opacity: 0.5;"></i> ${escapeHTML(name)}</div>
+            <button class="btn-delete" onclick="deleteAdminMaterial('${subjId}', '${type}', ${index})"><i class="fas fa-trash"></i></button>
+        </div>
+    `;
+}
+
+window.deleteAdminMaterial = async (subjId, type, index) => {
+    if (!confirm("Are you sure?")) return;
+    try {
+        const response = await fetch(`/api/admin/material/${subjId}/${type}/${index}`, {
+            method: 'DELETE',
+            headers: { 'x-admin-token': adminToken }
+        });
+        if (response.ok) {
+            showToast("Deleted");
+            await loadMaterials();
+            loadAdminMaterials();
+        }
+    } catch (err) { showToast("Delete failed"); }
 };

@@ -37,6 +37,8 @@ const FCM_SERVER_KEY = process.env.FCM_SERVER_KEY; // Legacy key or use Service 
 
 const ANNOUNCEMENTS_FILE = path.join(__dirname, 'data', 'announcements.json');
 const SUBSCRIBERS_FILE = path.join(__dirname, 'data', 'subscribers.json');
+const MATERIALS_FILE = path.join(__dirname, 'data', 'materials.json');
+const GRADES_FILE = path.join(__dirname, 'data', 'grades.json');
 
 // Ensure data directory exists
 async function initStorage() {
@@ -44,6 +46,8 @@ async function initStorage() {
     try { await fs.access(dir); } catch { await fs.mkdir(dir); }
     try { await fs.access(ANNOUNCEMENTS_FILE); } catch { await fs.writeFile(ANNOUNCEMENTS_FILE, '[]'); }
     try { await fs.access(SUBSCRIBERS_FILE); } catch { await fs.writeFile(SUBSCRIBERS_FILE, '[]'); }
+    try { await fs.access(MATERIALS_FILE); } catch { await fs.writeFile(MATERIALS_FILE, '{}'); }
+    try { await fs.access(GRADES_FILE); } catch { await fs.writeFile(GRADES_FILE, '[]'); }
 }
 initStorage();
 
@@ -144,6 +148,24 @@ app.get('/api/announcements', async (req, res) => {
         res.json(announcements.slice(-20).reverse()); // Return last 20
     } catch (err) {
         res.status(500).json({ error: "Failed to read announcements" });
+    }
+});
+
+app.get('/api/materials', async (req, res) => {
+    try {
+        const data = await fs.readFile(MATERIALS_FILE, 'utf8');
+        res.json(JSON.parse(data));
+    } catch (err) {
+        res.status(500).json({ error: "Failed to read materials" });
+    }
+});
+
+app.get('/api/grades', async (req, res) => {
+    try {
+        const data = await fs.readFile(GRADES_FILE, 'utf8');
+        res.json(JSON.parse(data));
+    } catch (err) {
+        res.status(500).json({ error: "Failed to read grades" });
     }
 });
 
@@ -292,6 +314,77 @@ app.delete('/api/admin/announcement/:id', adminAuth, async (req, res) => {
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: "Failed to delete" });
+    }
+});
+
+app.post('/api/admin/material', adminAuth, async (req, res) => {
+    const { subjectId, material } = req.body; // material: { type: 'chapter'|'playlist'|'task', data: {...} }
+    if (!subjectId || !material) return res.status(400).json({ error: "Data missing" });
+
+    try {
+        const data = await fs.readFile(MATERIALS_FILE, 'utf8');
+        let materials = JSON.parse(data);
+
+        if (!materials[subjectId]) {
+            materials[subjectId] = { title: subjectId, chapters: [], playlists: [], tasks: [] };
+        }
+
+        const subj = materials[subjectId];
+        if (material.type === 'chapter') subj.chapters.push(material.data);
+        if (material.type === 'playlist') subj.playlists.push(material.data);
+        if (material.type === 'task') subj.tasks.push(material.data);
+
+        await fs.writeFile(MATERIALS_FILE, JSON.stringify(materials));
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to update materials" });
+    }
+});
+
+app.delete('/api/admin/material/:subjectId/:type/:index', adminAuth, async (req, res) => {
+    const { subjectId, type, index } = req.params;
+    try {
+        const data = await fs.readFile(MATERIALS_FILE, 'utf8');
+        let materials = JSON.parse(data);
+        if (materials[subjectId] && materials[subjectId][type + 's']) {
+            materials[subjectId][type + 's'].splice(index, 1);
+            await fs.writeFile(MATERIALS_FILE, JSON.stringify(materials));
+            res.json({ success: true });
+        } else {
+            res.status(404).json({ error: "Not found" });
+        }
+    } catch (err) {
+        res.status(500).json({ error: "Error deleting" });
+    }
+});
+
+app.post('/api/admin/grade', adminAuth, async (req, res) => {
+    const { student } = req.body; // student: { id, name, gpa, grades: [...] }
+    if (!student || !student.id) return res.status(400).json({ error: "Data missing" });
+
+    try {
+        const data = await fs.readFile(GRADES_FILE, 'utf8');
+        let students = JSON.parse(data);
+        const index = students.findIndex(s => s.id === student.id);
+        if (index > -1) students[index] = student; // Update existing
+        else students.push(student); // Add new
+
+        await fs.writeFile(GRADES_FILE, JSON.stringify(students));
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to save grades" });
+    }
+});
+
+app.delete('/api/admin/grade/:id', adminAuth, async (req, res) => {
+    try {
+        const data = await fs.readFile(GRADES_FILE, 'utf8');
+        let students = JSON.parse(data);
+        const filtered = students.filter(s => s.id !== req.params.id);
+        await fs.writeFile(GRADES_FILE, JSON.stringify(filtered));
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to delete student" });
     }
 });
 

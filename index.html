@@ -489,6 +489,61 @@
                         <!-- Admin list of announcements -->
                     </div>
                 </div>
+
+                <!-- MATERIALS MANAGER -->
+                <div class="admin-card glass-card" style="grid-column: 1 / -1;">
+                    <h3><i class="fas fa-file-medical"></i> Materials Manager</h3>
+                    <div class="admin-form-row">
+                        <select id="adminSubjectSelect" class="lang-select">
+                            <option value="math2">رياضيات 2</option>
+                            <option value="prog2">برمجة 2</option>
+                            <option value="discrete">تراكيب محددة</option>
+                            <option value="social">قضايا اجتماعية</option>
+                            <option value="reports">كتابة التقارير</option>
+                            <option value="datacom">تراسل البيانات</option>
+                        </select>
+                        <select id="adminMaterialType" class="lang-select">
+                            <option value="chapter">Chapter (File)</option>
+                            <option value="playlist">Playlist (Video)</option>
+                            <option value="task">Task (Assignment)</option>
+                        </select>
+                    </div>
+                    <div class="input-group" style="margin-top: 15px;">
+                        <input type="text" id="adminMatName" placeholder="Name (e.g. Chapter 1 / Lecture Title)">
+                        <input type="text" id="adminMatUrl" placeholder="URL / File Link (Optional)">
+                        <textarea id="adminMatContent" placeholder="Task Description / Code (For Tasks only)"
+                            rows="3"></textarea>
+                    </div>
+                    <button class="btn btn-secondary" onclick="addMaterialToSubject()"
+                        style="width: 100%; margin-top: 1rem;">Add to Subject</button>
+
+                    <div id="adminMaterialsList" class="admin-list"
+                        style="margin-top: 2rem; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 1rem;">
+                        <!-- Materials grouped by subject -->
+                    </div>
+                </div>
+
+                <!-- STUDENT GRADES MANAGER -->
+                <div class="admin-card glass-card" style="grid-column: 1 / -1;">
+                    <h3><i class="fas fa-graduation-cap"></i> Student Grades Manager</h3>
+                    <div class="admin-form-row">
+                        <input type="text" id="adminStudentId" placeholder="Student ID (e.g. 2021001)">
+                        <input type="text" id="adminStudentName" placeholder="Full Name">
+                        <input type="text" id="adminStudentGPA" placeholder="GPA (e.g. 3.8)">
+                    </div>
+                    <div class="input-group" style="margin-top: 1rem;">
+                        <textarea id="adminStudentGradesJSON"
+                            placeholder='Grades JSON (e.g. [{"subject":"Math","degree":"95","grade":"A+","points":"4.0"}])'
+                            rows="3"></textarea>
+                    </div>
+                    <button class="btn btn-primary" onclick="addStudentGrade()"
+                        style="width: 100%; margin-top: 1rem;">Save Student Record</button>
+
+                    <div id="adminGradesList" class="admin-list"
+                        style="margin-top: 2rem; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 1rem;">
+                        <!-- List of students with delete buttons -->
+                    </div>
+                </div>
             </div>
         </section>
     </main>
