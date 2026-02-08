@@ -477,24 +477,77 @@ function runRuleEngine(err, code, lang) {
     const results = [];
     const lines = code.split('\n');
 
-    // 1. Bracket Matching Check
+    // --- 1. PARSE SERVER ERRORS (High Priority) ---
+    if (err) {
+        // C++/C: main.cpp:5:10: error: expected ';' before 'return'
+        // Java: Main.java:5: error: ';' expected
+        const serverErrorRegex = /(?:main\.\w+|Main|File "[^"]+", line)\s*:?(\d+)/i;
+        const match = err.match(serverErrorRegex);
+        if (match) {
+            const lineNum = parseInt(match[1]);
+            let cleanMsg = err.split('\n')[0].replace(/.*error:\s*/i, '').trim();
+
+            // Translate common server errors
+            let ar_desc = cleanMsg;
+            if (cleanMsg.includes("expected ';'")) ar_desc = "ناقصك سيمي كولون (;) في السطر ده أو اللي قبله.";
+            else if (cleanMsg.includes("was not declared")) ar_desc = "المتغير ده مش متعرف، اتأكد من كتابة اسمه صح أو عرفه الأول.";
+            else if (cleanMsg.includes("expected '}'")) ar_desc = "ناقصك قوس إغلاق } في الكود.";
+            else if (cleanMsg.includes("expected identifier")) ar_desc = "في حاجة غلط في تسمية المتغيرات أو الدوال هنا.";
+
+            results.push({
+                type: 'Compiler Error',
+                line: lineNum,
+                part: lines[lineNum - 1] || "Error",
+                explanation_ar: `السيرفر لقى خطأ: ${ar_desc}`,
+                explanation_en: `Compiler found: ${cleanMsg}`,
+                suggestion: "",
+                tip_ar: "بص على السطر ده كويس، السيرفر بيقول إن فيه مشكلة هنا."
+            });
+        }
+    }
+
+    // --- 2. IMPROVED STATIC ANALYSIS (Avoid False Positives) ---
+
+    // Check if code is actually correct (minimal false positives)
+    const hasMain = code.includes('main') || code.includes('function') || code.includes('<?php') || lang === 'python' || lang === 'javascript';
+    if (!hasMain && code.trim().length > 50) {
+        results.push({
+            type: 'Structure Warning', line: 1, part: "Code Structure",
+            explanation_ar: "الكود بتاعك ملوش بداية واضحة (زي main).",
+            explanation_en: "Entry point (like main) not found.",
+            suggestion: lang === 'cpp' ? "int main() {\n  // code\n  return 0;\n}" : "",
+            tip_ar: "اتأكد إن الكود محطوط جوه دالة البداية."
+        });
+    }
+
+    // Bracket Matching Check (Improved to ignore comments/strings)
     const stack = [];
     const pairs = { '(': ')', '{': '}', '[': ']' };
+    let inString = false;
+    let quoteChar = '';
+
     for (let i = 0; i < code.length; i++) {
         const char = code[i];
-        if (['(', '{', '['].includes(char)) stack.push({ char, pos: i });
+        if ((char === '"' || char === "'") && code[i - 1] !== '\\') {
+            if (!inString) { inString = true; quoteChar = char; }
+            else if (quoteChar === char) { inString = false; }
+            continue;
+        }
+        if (inString) continue;
+
+        if (['(', '{', '['].includes(char)) stack.push({ char, line: getLineFromPos(code, i) });
         else if ([')', '}', ']'].includes(char)) {
             if (stack.length === 0) {
                 results.push({
                     type: 'Brackets Error', line: getLineFromPos(code, i), part: char,
-                    explanation_ar: `قفلت قوس ${char} زيادة.`, explanation_en: `Extra closing bracket '${char}'.`, suggestion: "", tip_ar: "اتأكد من توازن الأقواس."
+                    explanation_ar: `قفلت قوس ${char} زيادة ومفيش فتح ليه.`, explanation_en: `Extra closing bracket '${char}'.`, suggestion: "", tip_ar: "امسح القوس الزيادة."
                 });
             } else {
                 const last = stack.pop();
                 if (pairs[last.char] !== char) {
                     results.push({
                         type: 'Brackets Error', line: getLineFromPos(code, i), part: char,
-                        explanation_ar: `فتحت ${last.char} وقفلت ${char}.`, explanation_en: `Mismatched brackets.`, suggestion: "", tip_ar: "الأقواس لازم تكون أزواج متطابقة."
+                        explanation_ar: `قفلت ${char} بس كنت فاتح ${last.char}. تداخل أقواس غلط.`, explanation_en: `Mismatched brackets: ${last.char} vs ${char}.`, suggestion: "", tip_ar: "صلح ترتيب قفل الأقواس."
                     });
                 }
             }
@@ -502,98 +555,56 @@ function runRuleEngine(err, code, lang) {
     }
     stack.forEach(rem => {
         results.push({
-            type: 'Brackets Error', line: getLineFromPos(code, rem.pos), part: rem.char,
+            type: 'Brackets Error', line: rem.line, part: rem.char,
             explanation_ar: `فتحت قوس ${rem.char} ومقفلتهوش.`, explanation_en: `Unclosed bracket '${rem.char}'.`, suggestion: "", tip_ar: "لازم تقفل أي قوس تفتحه."
         });
     });
 
     lines.forEach((l, i) => {
         const t = l.trim();
-        if (!t) return;
+        if (!t || t.startsWith('//') || t.startsWith('#') || t.startsWith('/*')) return;
 
-        // 2. STDLIB / Header Typos & Missing Brackets
-        if (lang === 'cpp' || lang === 'c') {
-            if (t.startsWith('#include')) {
-                const hasStart = t.includes('<') || t.includes('"');
-                const hasEnd = t.includes('>') || (t.match(/"/g) || []).length >= 2;
+        // Typo Detection (Only for keywords, not inside strings)
+        const keywords = ['include', 'iostream', 'return', 'cout', 'printf', 'System', 'public', 'static', 'void', 'class', 'while', 'for', 'if', 'else'];
+        keywords.forEach(kw => {
+            const words = t.split(/\s+/);
+            words.forEach(w => {
+                const cleanW = w.replace(/[();{}[\]]/g, '');
+                if (cleanW.length < 3) return;
 
-                if (!hasStart || !hasEnd) {
-                    results.push({
-                        type: 'Include Error', line: i + 1, part: t,
-                        explanation_ar: `تنسيق الـ include غلط. لازم تكون <اسم المكتبة> أو "اسم المكتبة".`,
-                        explanation_en: `Malformed include directive. Use <header> or "header".`,
-                        suggestion: "#include <iostream>",
-                        tip_ar: "المكتبات بتتحط بين < >"
-                    });
-                } else {
-                    const header = t.match(/<([^>]+)>/)?.[1] || t.match(/"([^"]+)"/)?.[1];
-                    const validHeaders = ['iostream', 'stdio.h', 'vector', 'string', 'algorithm', 'cmath', 'stdlib.h', 'bits/stdc++.h'];
-                    if (header && !validHeaders.includes(header)) {
-                        if (header.includes('istre') || header.includes('iostre')) {
-                            results.push({ type: 'Header Error', line: i + 1, part: header, explanation_ar: `اسم المكتبة غلط، قصدك iostream؟`, explanation_en: `Typo in header name. Did you mean <iostream>?`, suggestion: `#include <iostream>`, tip_ar: "اتأكد من كتابة اسم المكتبة صح." });
-                        }
+                // Simple Levenshtein-like distance check for typos
+                if (cleanW !== kw && cleanW.length === kw.length) {
+                    let diff = 0;
+                    for (let x = 0; x < kw.length; x++) if (cleanW[x] !== kw[x]) diff++;
+                    if (diff === 1) {
+                        results.push({
+                            type: 'Typo Detected', line: i + 1, part: cleanW,
+                            explanation_ar: `كلمة '${cleanW}' شكلها غلط، قصدك '${kw}'؟`,
+                            explanation_en: `Keyword typo: '${cleanW}' looks like '${kw}'.`,
+                            suggestion: kw, tip_ar: "صلح الكلمة المحجوزة."
+                        });
                     }
                 }
-            }
-            if (t.includes('using') && t.includes('namespace')) {
-                if (!t.includes('std')) {
-                    results.push({ type: 'Namespace Error', line: i + 1, part: t, explanation_ar: `ناقصك كلمة std.`, explanation_en: `Missing 'std' in using namespace.`, suggestion: `using namespace std;`, tip_ar: "استخدم using namespace std;" });
-                } else if (!t.endsWith(';')) {
-                    results.push({ type: 'Missing Semicolon', line: i + 1, part: t, explanation_ar: `نسيت السيمي كولون (;) بعد الـ namespace.`, explanation_en: `Missing semicolon after namespace declaration.`, suggestion: t + ";", tip_ar: "أي سطر تعريفي لازم ينتهي بـ ;" });
-                }
-            }
-        }
-
-        // 3. Reserved Word Typos (Common)
-        const commonTypos = {
-            'prnt': 'print', 'prntf': 'printf', 'cont': 'cout', 'retun': 'return', ' स्टैटिक': 'static', 'publc': 'public', 'clas': 'class'
-        };
-        Object.keys(commonTypos).forEach(typo => {
-            if (t.includes(typo)) {
-                results.push({ type: 'Typo Detected', line: i + 1, part: typo, explanation_ar: `كاتب كلمة '${typo}' غلط، قصدك '${commonTypos[typo]}'.`, explanation_en: `Typo in keyword '${typo}'. Did you mean '${commonTypos[typo]}'?`, suggestion: l.replace(typo, commonTypos[typo]), tip_ar: "خد بالك من الحروف." });
-            }
+            });
         });
 
-        // 4. Missing Quotes
-        const quotes = (t.match(/"/g) || []).length;
-        if (quotes % 2 !== 0 && !t.includes("'") && !t.startsWith('//') && !t.startsWith('#')) {
-            results.push({ type: 'Syntax Error', line: i + 1, part: t, explanation_ar: "علامات التنصيص مش مقفولة.", explanation_en: "Unclosed string.", suggestion: t + '"', tip_ar: "النص لازم يكون بين \"\"" });
-        }
-
-        // 5. Language Specifics (Python print() check)
-        if (lang === 'python') {
-            if (t.startsWith('print ') && !t.includes('(')) {
-                results.push({
-                    type: 'Syntax Error', line: i + 1, part: t,
-                    explanation_ar: "بايثون 3 لازم تستخدم أقواس مع الـ print.",
-                    explanation_en: "Python 3 needs parentheses for print().",
-                    suggestion: l.replace('print ', 'print(') + ')', tip_ar: "استعمل print(\"hello\")"
-                });
-            }
-            if ((t.startsWith('if ') || t.startsWith('for ') || t.startsWith('while ') || t.startsWith('def ')) && !t.endsWith(':')) {
-                results.push({
-                    type: 'Missing Colon', line: i + 1, part: t,
-                    explanation_ar: "نسيت النقطتين : في آخر السطر.",
-                    explanation_en: "Missing colon (:) at the end of statement.",
-                    suggestion: l + ":", tip_ar: "بايثون بتطلب : بعد الـ if/for/def"
-                });
-            }
-        }
-
-        // 6. Semicolon check
+        // Semicolon check (Refined to be less aggressive)
         if (['c', 'cpp', 'java'].includes(lang)) {
-            const safeStarts = ['#', '//', 'using', 'public', 'int main', '{', '}', 'if', 'for', 'while', 'void', 'class'];
-            const needsSemicolon = t.startsWith('return') || t.startsWith('cout') || t.startsWith('printf') ||
-                t.startsWith('System.out') || t.includes('=') || t.includes('<<') ||
-                (t.length > 5 && !safeStarts.some(s => t.startsWith(s)));
+            const endsWithSemicolon = t.endsWith(';');
+            const startsWithSafe = ['#', '/', '{', '}', 'if', 'for', 'while', 'else', 'public', 'private', 'protected', 'class', 'void', 'int main', 'using'];
+            const lineRequiresSemicolon = t.length > 2 && !startsWithSafe.some(s => t.startsWith(s)) && !t.endsWith('{') && !t.endsWith('}') && !t.endsWith(')');
 
-            if (needsSemicolon && !t.endsWith(';') && !t.endsWith('{') && !t.endsWith('}')) {
-                results.push({
-                    type: 'Missing Semicolon', line: i + 1, part: t,
-                    explanation_ar: "نسيت الـ ; في الآخر.",
-                    explanation_en: "Missing semicolon.",
-                    suggestion: l + ";", tip_ar: "كل أمر برمجي ينتهي بـ ;"
-                });
+            if (lineRequiresSemicolon && !endsWithSemicolon) {
+                // Check if next line is a semicolon or starts with one (sometimes happens)
+                const nextLine = lines[i + 1]?.trim() || "";
+                if (!nextLine.startsWith(';') && !nextLine.startsWith('{')) {
+                    results.push({
+                        type: 'Missing Semicolon', line: i + 1, part: t,
+                        explanation_ar: "نسيت السيمي كولون (;) في آخر السطر ده.",
+                        explanation_en: "Missing semicolon (;)",
+                        suggestion: l + ";", tip_ar: "أي أمر في لغات زي C++/Java لازم ينتهي بـ ;"
+                    });
+                }
             }
         }
     });
@@ -609,8 +620,14 @@ function createFixCard(f) {
     const card = document.createElement('div'); card.className = `fix-card ${currentUIText === 'ar' ? 'ar' : ''}`;
     const h = document.createElement('div'); h.className = 'fix-header';
     h.innerHTML = `<div class="fix-title"><i class="fas fa-exclamation-triangle"></i> ${f.type}</div><div class="fix-location">Line ${f.line}</div>`;
-    const e = document.createElement('div'); e.className = 'fix-explanation'; e.innerText = currentUIText === 'ar' ? f.explanation_ar : f.explanation_en;
-    card.appendChild(h); card.appendChild(e);
+    const e = document.createElement('div'); e.className = 'fix-explanation';
+    e.innerText = currentUIText === 'ar' ? f.explanation_ar : f.explanation_en;
+
+    card.appendChild(h);
+    card.appendChild(e);
+
+    const actions = document.createElement('div');
+    actions.className = 'fix-actions';
 
     if (f.suggestion) {
         const s = document.createElement('div'); s.className = 'fix-suggestion';
@@ -618,12 +635,65 @@ function createFixCard(f) {
 
         const tip = document.createElement('div');
         tip.className = 'fix-tip';
-        tip.innerHTML = `<i class="fas fa-lightbulb"></i> ${currentUIText === 'ar' ? 'صلح السطر ده زي اللي فوق عشان الكود يشتغل.' : 'Fix this line manually following the suggestion above.'}`;
+        tip.innerHTML = `<i class="fas fa-lightbulb"></i> ${currentUIText === 'ar' ? 'صلح السطر ده زي اللي فوق عشان الكود يشتغل.' : 'Fix this line following the suggestion.'}`;
 
         card.appendChild(s);
         card.appendChild(tip);
     }
+
+    // AI Explanation Button
+    const aiBtn = document.createElement('button');
+    aiBtn.className = 'btn-ai-explain';
+    aiBtn.innerHTML = `<i class="fas fa-brain"></i> ${currentUIText === 'ar' ? 'شرح بالذكاء الاصطناعي' : 'Explain with AI'}`;
+    aiBtn.onclick = () => askAIFix(f, card);
+    actions.appendChild(aiBtn);
+
+    card.appendChild(actions);
     return card;
+}
+
+async function askAIFix(f, card) {
+    const aiKey = localStorage.getItem('gemini_api_key');
+    if (!aiKey) {
+        showToast(currentUIText === 'ar' ? "ضف مفتاح Gemini API من الإعدادات الأول!" : "Add Gemini API Key in settings first!");
+        openSettings();
+        return;
+    }
+
+    const feedback = document.createElement('div');
+    feedback.className = 'ai-loading';
+    feedback.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${currentUIText === 'ar' ? 'جاري التحليل...' : 'Analyzing...'}`;
+    card.appendChild(feedback);
+
+    try {
+        const prompt = `Act as an expert programming tutor for a student using an online IDE. 
+        Language: ${currentLanguage}
+        Error Type: ${f.type}
+        Line: ${f.line}
+        Code snippet on that line: ${f.part}
+        Compiler/Static error message: ${f.explanation_en}
+        
+        Please provide a concise but deep explanation of why this error happens and how to fix it. 
+        Respond in ${currentUIText === 'ar' ? 'Arabic' : 'English'}. 
+        Format your response with markdown. Keep it under 100 words.`;
+
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${aiKey}`, {
+            method: 'POST',
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+        });
+
+        const data = await response.json();
+        const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || "AI couldn't generate a response.";
+
+        feedback.remove();
+        const aiResult = document.createElement('div');
+        aiResult.className = 'ai-result-box';
+        aiResult.innerHTML = `<div class="ai-result-header"><i class="fas fa-robot"></i> Cyber AI</div><div class="ai-text">${aiText}</div>`;
+        card.appendChild(aiResult);
+    } catch (e) {
+        feedback.remove();
+        showToast("AI Error: " + e.message);
+    }
 }
 
 function updateUILanguage() {
@@ -662,7 +732,8 @@ window.showSection = showSection; window.toggleTheme = toggleTheme; window.execu
 // --- API SETTINGS LOGIC (Hidden Admin Mode) ---
 window.openSettings = () => {
     document.getElementById('apiKeyInput').value = localStorage.getItem('judge0_api_key') || "";
-    document.getElementById('baseUrlInput').value = localStorage.getItem('judge0_base_url') || "https://judge0-ce.p.rapidapi.com";
+    document.getElementById('baseUrlInput').value = localStorage.getItem('judge0_base_url') || "https://ce.judge0.com";
+    document.getElementById('aiKeyInput').value = localStorage.getItem('gemini_api_key') || "";
     document.getElementById('settingsModal').style.display = 'flex';
 };
 
@@ -672,12 +743,17 @@ window.closeSettings = () => {
 
 window.saveSettings = () => {
     const key = document.getElementById('apiKeyInput').value.trim();
-    const url = document.getElementById('baseUrlInput').value.trim() || "https://judge0-ce.p.rapidapi.com";
+    const url = document.getElementById('baseUrlInput').value.trim() || "https://ce.judge0.com";
+    const aiKey = document.getElementById('aiKeyInput').value.trim();
+
     localStorage.setItem('judge0_api_key', key);
     localStorage.setItem('judge0_base_url', url);
+    localStorage.setItem('gemini_api_key', aiKey);
+
     RAPIDAPI_KEY = key;
     JUDGE0_BASE_URL = url;
-    showToast("Settings Saved! Admin Mode Active.");
+
+    showToast("Settings Saved!");
     closeSettings();
     if (editor) analyzeErrors("", editor.getValue());
 };
