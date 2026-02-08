@@ -491,6 +491,18 @@ function analyzeErrors(rawError, code) {
     } else smartContainer.innerHTML = `<div class="empty-state">✅ Healthy Code! No errors.</div>`;
 }
 
+function translateErrorToAr(msg) {
+    const lower = msg.toLowerCase();
+    if (lower.includes("expected ';'")) return "ناقصك سيمي كولون (;) في نهاية السطر.";
+    if (lower.includes("unterminated string literal")) return "فتحت نص (String) ومقفلتهوش بعلامة تنصيص (Double Quotes).";
+    if (lower.includes("unexpected indent")) return "في مشكلة في المسافات (Indentation) في بداية السطر. لغة Python حساسة جداً للمسافات.";
+    if (lower.includes("was not declared") || lower.includes("is not defined")) return "المتغير ده مش متعرف، اتأكد من كتابة الاسم صح أو عرفه الأول.";
+    if (lower.includes("expected '}'")) return "ناقصك قوس إغلاق } للكود.";
+    if (lower.includes("expected identifier")) return "في حاجة غلط في تسمية المتغيرات أو الدوال هنا.";
+    if (lower.includes("invalid syntax")) return "في خطأ في طريقة كتابة الكود هنا (Syntax Error).";
+    return null;
+}
+
 function runRuleEngine(err, code, lang) {
     const results = [];
     const lines = code.split('\n');
@@ -512,14 +524,16 @@ function runRuleEngine(err, code, lang) {
                 const lineNum = parseInt(match[1]);
                 let cleanMsg = line.replace(/.*error:\s*/i, '').replace(/.*line \d+, in .*/i, '').trim() || line;
 
+                const translated = translateErrorToAr(cleanMsg);
+
                 results.push({
                     type: 'Compiler Error',
                     line: lineNum,
                     part: lines[lineNum - 1] || "Error",
-                    explanation_ar: `المترجم (Compiler) لقى خطأ: ${cleanMsg}`,
+                    explanation_ar: translated ? `المشكلة: ${translated}` : `المترجم اكتشف خطأ: ${cleanMsg}`,
                     explanation_en: `Compiler found: ${cleanMsg}`,
                     suggestion: "",
-                    tip_ar: "الذكاء الاصطناعي يقدر يساعدك تفهم الخطأ ده لو دوست على 'شرح بالذكاء الاصطناعي'."
+                    tip_ar: "اضغط على زرار الذكاء الاصطناعي لو عايز حل مفصل للسطر ده بالظبط."
                 });
             }
         });
@@ -655,11 +669,14 @@ function createFixCard(f) {
     const h = document.createElement('div'); h.className = 'fix-header';
     h.innerHTML = `<div class="fix-title"><i class="fas fa-exclamation-triangle"></i> ${f.type}</div><div class="fix-location">Line ${f.line}</div>`;
     const e = document.createElement('div'); e.className = 'fix-explanation';
-    e.innerHTML = `<div>${currentUIText === 'ar' ? f.explanation_ar : f.explanation_en}</div>`;
+    e.innerHTML = `<div class="main-explanation">${currentUIText === 'ar' ? f.explanation_ar : f.explanation_en}</div>`;
 
-    // For technical/general errors, show the raw English output as well
-    if (f.explanation_en && currentUIText === 'ar' && (f.type === 'Compiler Notification' || f.line === '?')) {
-        e.innerHTML += `<div style="font-size: 0.85em; opacity: 0.7; margin-top: 8px; font-family: 'Consolas', monospace; direction: ltr; text-align: left; background: rgba(0,0,0,0.2); padding: 5px; border-radius: 4px;">Technical: ${f.explanation_en}</div>`;
+    // Always show the technical message if we have translating it, or if it's a notification
+    if (f.explanation_en && currentUIText === 'ar') {
+        const isTranslated = f.explanation_ar.includes("المشكلة:");
+        if (isTranslated || f.type === 'Compiler Notification' || f.line === '?') {
+            e.innerHTML += `<div class="technical-msg">Technical Error (English): ${f.explanation_en}</div>`;
+        }
     }
 
     card.appendChild(h);
