@@ -1371,21 +1371,25 @@ window.postAdminAnnouncement = async () => {
 };
 
 window.deleteAnnouncement = async (id) => {
+    if (!confirm("Delete this announcement?")) return;
     try {
-        const response = await fetch(`/api/admin/announcement/${id}`, {
-            method: 'DELETE',
-            headers: { 'x-admin-token': adminToken }
-        });
-        const data = await response.json();
-        if (data.success) {
-            showToast("Deleted");
-            loadAdminAnnouncements();
-            loadAnnouncements(); // Refresh public feed too
-        }
+        await db.ref('announcements/' + id).remove();
+        showToast("Deleted");
+        // loadAdminAnnouncements is handled by realtime listener if we set one up
+        // But for specific deletion, the listener will auto-update
     } catch (err) {
         showToast("Delete failed");
+        console.error(err);
     }
 };
+
+// Keyboard Shortcut for Admin Access (Ctrl + Shift + A)
+document.addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
+        e.preventDefault();
+        window.openAdminLogin();
+    }
+});
 
 // Modify showSection to handle admin loading
 const originalShowSection = window.showSection;
@@ -1418,18 +1422,25 @@ window.switchAdminTab = (tabId) => {
 
 async function loadAdminAnnouncements() {
     const list = document.getElementById('adminAnnouncementList');
-    try {
-        const response = await fetch('/api/announcements');
-        const announcements = await response.json();
+    if (!list) return;
+
+    // Use the same Firebase ref
+    db.ref('announcements').limitToLast(50).on('value', (snapshot) => {
+        const data = snapshot.val();
+        if (!data) {
+            list.innerHTML = '<p style="opacity:0.5;">No broadcast transmissions found.</p>';
+            return;
+        }
+
+        const announcements = Object.entries(data).map(([key, val]) => ({ id: key, ...val })).reverse();
+
         list.innerHTML = announcements.map(a => `
             <div class="admin-item">
                 <div class="item-text">${escapeHTML(a.text)}</div>
                 <button class="btn-delete-icon" onclick="deleteAnnouncement('${a.id}')"><i class="fas fa-trash"></i></button>
             </div>
-        `).join('') || '<p style="opacity:0.5;">No broadcast transmissions found.</p>';
-    } catch (err) {
-        list.innerHTML = "<p>Error synchronization failed.</p>";
-    }
+        `).join('');
+    });
 }
 
 // --- ADMIN MATERIALS LOGIC ---
