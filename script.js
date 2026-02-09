@@ -1101,21 +1101,7 @@ if (socket) {
     });
 }
 
-async function loadAnnouncements() {
-    const feed = document.getElementById('announcementFeed');
-    try {
-        const response = await fetch('/api/announcements');
-        const announcements = await response.json();
-        feed.innerHTML = "";
-        if (announcements.length === 0) {
-            feed.innerHTML = `<div class="empty-state"><i class="fas fa-bullhorn"></i><p>No announcements yet.</p></div>`;
-            return;
-        }
-        announcements.forEach(a => addAnnouncementToFeed(a, false));
-    } catch (err) {
-        feed.innerHTML = `<div class="error-state"><p>Failed to load announcements.</p></div>`;
-    }
-}
+// Old loadAnnouncements removed, replaced by real-time listener above
 
 function addAnnouncementToFeed(a, isNew) {
     const feed = document.getElementById('announcementFeed');
@@ -1143,21 +1129,68 @@ function addAnnouncementToFeed(a, isNew) {
     else feed.appendChild(card);
 }
 
-// --- PUSH NOTIFICATIONS (FCM) ---
-// Instructions: Add your Firebase config here
+// --- FIREBASE CONFIGURATION & INIT ---
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_AUTH_DOMAIN",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_STORAGE_BUCKET",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    apiKey: "AIzaSyDQgf1j2UZvRFoymarjnvRP6CJs2kmelFM",
+    authDomain: "cyberhubfcizu.firebaseapp.com",
+    projectId: "cyberhubfcizu",
+    storageBucket: "cyberhubfcizu.firebasestorage.app",
+    messagingSenderId: "603996616273",
+    appId: "1:603996616273:web:619aadbce5862b18882a70",
+    measurementId: "G-401J98N9RY"
 };
 
-let messaging = null;
-if (typeof firebase !== 'undefined') {
-    firebase.initializeApp(firebaseConfig);
-    messaging = firebase.messaging();
+// Initialize Firebase (Compat)
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const storage = firebase.storage();
+const analytics = firebase.analytics();
+
+// --- REAL-TIME ANNOUNCEMENTS & NOTIFICATIONS ---
+function loadAnnouncements() {
+    const feed = document.getElementById('announcementFeed');
+    const dbRef = db.ref('announcements');
+
+    // Initial Load & Real-time Updates (Last 20)
+    dbRef.limitToLast(20).on('value', (snapshot) => {
+        feed.innerHTML = "";
+        const data = snapshot.val();
+
+        if (!data) {
+            feed.innerHTML = `<div class="empty-state"><i class="fas fa-bullhorn"></i><p>No announcements yet.</p></div>`;
+            return;
+        }
+
+        // Convert object to array and reverse (Newest First)
+        const list = Object.entries(data).map(([key, val]) => ({ id: key, ...val })).reverse();
+        list.forEach(a => addAnnouncementToFeed(a, false));
+    });
+
+    // Listen for NEW additions separately to trigger notifications
+    // We use a timestamp check to avoid notifying for old messages on reload
+    const loadTime = Date.now();
+    dbRef.limitToLast(1).on('child_added', (snapshot) => {
+        const val = snapshot.val();
+        if (new Date(val.created_at).getTime() > loadTime) {
+            showToast("New Announcement! 📢");
+            if (window.showNativeNotification) {
+                showNativeNotification("CyberHub Update 🚀", val.text);
+            }
+            // Play Sound
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (AudioContext) {
+                    const ctx = new AudioContext();
+                    const osc = ctx.createOscillator();
+                    const g = ctx.createGain();
+                    osc.connect(g); g.connect(ctx.destination);
+                    osc.frequency.setValueAtTime(440, ctx.currentTime);
+                    g.gain.setValueAtTime(0.1, ctx.currentTime);
+                    osc.start(); osc.stop(ctx.currentTime + 0.5);
+                }
+            } catch (e) { }
+        }
+    });
 }
 
 async function setupNotifications() {
@@ -1262,25 +1295,20 @@ window.openAdminLogin = () => {
 
 window.submitAdminLogin = async () => {
     const password = document.getElementById('adminPasswordInput').value;
-    try {
-        const response = await fetch('/api/admin/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ password })
-        });
-        const data = await response.json();
-        if (data.success) {
-            adminToken = data.token;
-            localStorage.setItem('adminToken', adminToken);
-            document.getElementById('adminLoginModal').style.display = 'none';
-            showSection('admin');
-            showToast("Welcome Admin");
-        } else {
-            alert("❌ Login Failed: " + (data.error || "Incorrect Password"));
-        }
-    } catch (err) {
-        console.error("Login Error:", err);
-        alert("⚠️ Connection Error: Is the server running? Check console for details.");
+    // For simplicity in static hosting, we check password against a hardcoded hash or DB value
+    // In a real app, use firebase.auth().signInWithEmailAndPassword()
+
+    // HASH CHECK (Simple Admin Protection)
+    // The password is 'admin123' (You can change this logic later)
+    if (password === "admin123") {
+        adminToken = "firebase-admin-session";
+        localStorage.setItem('adminToken', adminToken);
+        document.getElementById('adminLoginModal').style.display = 'none';
+        showSection('admin');
+        showToast("Welcome Admin");
+        loadAdminAnnouncements(); // Refresh admin list
+    } else {
+        alert("❌ Incorrect Password");
     }
 };
 
@@ -1291,61 +1319,53 @@ window.postAdminAnnouncement = async () => {
     if (!text.trim()) return;
 
     try {
-        const response = await fetch('/api/admin/announcement', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-admin-token': adminToken
-            },
-            body: JSON.stringify({ text })
+        // Push to Firebase Realtime Database
+        await db.ref('announcements').push({
+            text: text,
+            created_at: new Date().toISOString(),
+            source: "admin_panel"
         });
-        const data = await response.json();
-        if (data.success) {
-            document.getElementById('adminAnnouncementText').value = "";
-            showToast("Posted & Group Notified!");
-            loadAdminAnnouncements();
 
-            // Immediate feedback for Admin (Sound + Notification)
-            if (Notification.permission === 'granted') {
-                showNativeNotification("CyberHub Admin 🛡️", "Broadcast sent successfully: " + text);
-            } else if (Notification.permission !== 'denied') {
-                Notification.requestPermission().then(permission => {
-                    if (permission === "granted") {
-                        showNativeNotification("CyberHub Admin 🛡️", "Broadcast sent successfully: " + text);
-                    }
-                });
-            } else {
-                showToast("⚠️ Notifications are blocked by browser settings", 4000);
-            }
+        // Success Handling
+        document.getElementById('adminAnnouncementText').value = "";
+        showToast("Posted & Group Notified!");
 
-            // Play confirmation sound (Web Audio API - No external file needed)
-            try {
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                if (AudioContext) {
-                    const audioCtx = new AudioContext();
-                    const oscillator = audioCtx.createOscillator();
-                    const gainNode = audioCtx.createGain();
-
-                    oscillator.connect(gainNode);
-                    gainNode.connect(audioCtx.destination);
-
-                    oscillator.type = 'sine';
-                    oscillator.frequency.setValueAtTime(500, audioCtx.currentTime); // Frequency in Hz
-                    gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
-
-                    oscillator.start();
-                    gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.5);
-                    oscillator.stop(audioCtx.currentTime + 0.5);
+        // Immediate feedback for Admin (Sound + Notification)
+        if (Notification.permission === 'granted') {
+            showNativeNotification("CyberHub Admin 🛡️", "Broadcast sent successfully: " + text);
+        } else if (Notification.permission !== 'denied') {
+            Notification.requestPermission().then(permission => {
+                if (permission === "granted") {
+                    showNativeNotification("CyberHub Admin 🛡️", "Broadcast sent successfully: " + text);
                 }
-            } catch (e) {
-                console.warn("Audio Context failed", e);
-            }
-
-        } else {
-            showToast("Post failed: " + data.error);
+            });
         }
+
+        // Play confirmation sound (Web Audio API - No external file needed)
+        try {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (AudioContext) {
+                const audioCtx = new AudioContext();
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(500, audioCtx.currentTime); // Frequency in Hz
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+
+                oscillator.start();
+                gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.5);
+                oscillator.stop(audioCtx.currentTime + 0.5);
+            }
+        } catch (e) {
+            console.warn("Audio Context failed", e);
+        }
+
     } catch (err) {
-        showToast("Server error");
+        showToast("Error posting announcement");
         console.error(err);
     }
 };
