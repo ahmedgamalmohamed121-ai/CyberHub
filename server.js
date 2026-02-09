@@ -40,15 +40,8 @@ const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY;
 const RAPIDAPI_HOST = process.env.RAPIDAPI_HOST;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
-// Telegram & Notifications Config
-const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
-const ADMIN_CHAT_IDS = (process.env.ADMIN_CHAT_IDS || "").split(',').map(id => id.trim());
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin123";
-const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET || crypto.randomBytes(16).toString('hex');
-const FCM_SERVER_KEY = process.env.FCM_SERVER_KEY; // Legacy key or use Service Account for V1
 
-const ANNOUNCEMENTS_FILE = path.join(__dirname, 'data', 'announcements.json');
-const SUBSCRIBERS_FILE = path.join(__dirname, 'data', 'subscribers.json');
 const MATERIALS_FILE = path.join(__dirname, 'data', 'materials.json');
 const GRADES_FILE = path.join(__dirname, 'data', 'grades.json');
 
@@ -56,8 +49,7 @@ const GRADES_FILE = path.join(__dirname, 'data', 'grades.json');
 async function initStorage() {
     const dir = path.join(__dirname, 'data');
     try { await fs.access(dir); } catch { await fs.mkdir(dir); }
-    try { await fs.access(ANNOUNCEMENTS_FILE); } catch { await fs.writeFile(ANNOUNCEMENTS_FILE, '[]'); }
-    try { await fs.access(SUBSCRIBERS_FILE); } catch { await fs.writeFile(SUBSCRIBERS_FILE, '[]'); }
+
     try { await fs.access(MATERIALS_FILE); } catch { await fs.writeFile(MATERIALS_FILE, '{}'); }
     try { await fs.access(GRADES_FILE); } catch { await fs.writeFile(GRADES_FILE, '[]'); }
     const uploadsDir = path.join(__dirname, 'uploads');
@@ -155,15 +147,7 @@ app.post('/api/ai-explain', async (req, res) => {
 
 // --- ANNOUNCEMENTS & TELEGRAM WEBHOOK ---
 
-app.get('/api/announcements', async (req, res) => {
-    try {
-        const data = await fs.readFile(ANNOUNCEMENTS_FILE, 'utf8');
-        const announcements = JSON.parse(data);
-        res.json(announcements.slice(-20).reverse()); // Return last 20
-    } catch (err) {
-        res.status(500).json({ error: "Failed to read announcements" });
-    }
-});
+
 
 app.get('/api/materials', async (req, res) => {
     try {
@@ -181,253 +165,6 @@ app.get('/api/grades', async (req, res) => {
     } catch (err) {
         res.status(500).json({ error: "Failed to read grades" });
     }
-});
-
-app.post('/api/subscribe', async (req, res) => {
-    const { token } = req.body;
-    if (!token) return res.status(400).json({ error: "Token required" });
-
-    try {
-        const data = await fs.readFile(SUBSCRIBERS_FILE, 'utf8');
-        let subs = JSON.parse(data);
-        if (!subs.includes(token)) {
-            subs.push(token);
-            await fs.writeFile(SUBSCRIBERS_FILE, JSON.stringify(subs));
-        }
-        res.json({ success: true });
-    } catch (err) {
-        res.status(500).json({ error: "Subscription failed" });
-    }
-});
-
-app.post('/telegram-webhook', async (req, res) => {
-    // Basic Security: Check secret header if provided by TG or custom
-    const tgSecret = req.headers['x-telegram-bot-api-secret-token'];
-    if (WEBHOOK_SECRET && tgSecret !== WEBHOOK_SECRET) {
-        // Optional: you can set this when calling setWebhook
-        // For now, let's at least check the chat ID
-    }
-
-    const { message } = req.body;
-    if (!message || !message.text) return res.sendStatus(200);
-
-    // ONLY accept from Admins
-    if (!ADMIN_CHAT_IDS.includes(String(message.chat.id))) {
-        console.warn(`Unauthorized access from Chat ID: ${message.chat.id}`);
-        return res.sendStatus(200);
-    }
-
-    const text = message.text.trim();
-    if (text.length === 0 || text.length > 2000) return res.sendStatus(200);
-
-    const announcement = {
-        id: Date.now(),
-        text: text,
-        created_at: new Date().toISOString(),
-        source: "telegram"
-    };
-
-    try {
-        // 1. Save announcement
-        const data = await fs.readFile(ANNOUNCEMENTS_FILE, 'utf8');
-        let announcements = JSON.parse(data);
-        announcements.push(announcement);
-        await fs.writeFile(ANNOUNCEMENTS_FILE, JSON.stringify(announcements));
-
-        // 2. Emit via Socket.io for real-time update
-        io.emit('new_announcement', announcement);
-
-        // 3. Send Push Notifications
-        sendPushNotifications(announcement.text);
-
-        res.sendStatus(200);
-    } catch (err) {
-        console.error("Webhook Error:", err);
-        res.sendStatus(500);
-    }
-});
-
-async function sendPushNotifications(text) {
-    if (!FCM_SERVER_KEY) return;
-    try {
-        const data = await fs.readFile(SUBSCRIBERS_FILE, 'utf8');
-        const tokens = JSON.parse(data);
-        if (tokens.length === 0) return;
-
-        // Using Legacy FCM API for simplicity (no oauth2 flow needed here)
-        await axios.post('https://fcm.googleapis.com/fcm/send', {
-            registration_ids: tokens,
-            notification: {
-                title: "CyberHub Announcement 📢",
-                body: text.length > 100 ? text.substring(0, 97) + "..." : text,
-                icon: "/favicon.ico",
-                click_action: "https://" + (process.env.DOMAIN || "localhost:3000") + "/#announcements"
-            }
-        }, {
-            headers: {
-                'Authorization': `key=${FCM_SERVER_KEY}`,
-                'Content-Type': 'application/json'
-            }
-        });
-    } catch (err) {
-        console.error("FCM Error:", err.response ? err.response.data : err.message);
-    }
-}
-
-// --- ADMIN DASHBOARD API ---
-
-app.post('/api/admin/login', (req, res) => {
-    const { password } = req.body;
-    if (password === ADMIN_PASSWORD) {
-        // In a real app, use JWT. For now, simple success
-        res.json({ success: true, token: crypto.createHash('sha256').update(ADMIN_PASSWORD).digest('hex') });
-    } else {
-        res.status(401).json({ success: false, error: "Invalid password" });
-    }
-});
-
-// Middleware for admin auth (simple check for demo purpose)
-const adminAuth = (req, res, next) => {
-    const token = req.headers['x-admin-token'];
-    const expected = crypto.createHash('sha256').update(ADMIN_PASSWORD).digest('hex');
-    if (token === expected) return next();
-    res.status(403).json({ error: "Unauthorized" });
-};
-
-app.post('/api/admin/announcement', adminAuth, async (req, res) => {
-    const { text } = req.body;
-    if (!text) return res.status(400).json({ error: "Text required" });
-
-    const announcement = {
-        id: Date.now(),
-        text: text,
-        created_at: new Date().toISOString(),
-        source: "admin_panel"
-    };
-
-    try {
-        const data = await fs.readFile(ANNOUNCEMENTS_FILE, 'utf8');
-        let announcements = JSON.parse(data);
-        announcements.push(announcement);
-        await fs.writeFile(ANNOUNCEMENTS_FILE, JSON.stringify(announcements));
-        io.emit('new_announcement', announcement);
-        sendPushNotifications(announcement.text);
-        res.json({ success: true, announcement });
-    } catch (err) {
-        res.status(500).json({ error: "Failed to save" });
-    }
-});
-
-app.delete('/api/admin/announcement/:id', adminAuth, async (req, res) => {
-    const { id } = req.params;
-    try {
-        const data = await fs.readFile(ANNOUNCEMENTS_FILE, 'utf8');
-        let announcements = JSON.parse(data);
-        const filtered = announcements.filter(a => String(a.id) !== String(id));
-        await fs.writeFile(ANNOUNCEMENTS_FILE, JSON.stringify(filtered));
-        res.json({ success: true });
-    } catch (err) {
-        res.status(500).json({ error: "Failed to delete" });
-    }
-});
-
-app.post('/api/admin/material', adminAuth, async (req, res) => {
-    const { subjectId, material } = req.body; // material: { type: 'chapter'|'playlist'|'task', data: {...}, index: ? }
-    if (!subjectId || !material) return res.status(400).json({ error: "Data missing" });
-
-    try {
-        const data = await fs.readFile(MATERIALS_FILE, 'utf8');
-        let materials = JSON.parse(data);
-
-        if (!materials[subjectId]) {
-            materials[subjectId] = { title: subjectId, chapters: [], playlists: [], tasks: [] };
-        }
-
-        const subj = materials[subjectId];
-
-        if (material.type === 'chapter') {
-            // Ensure chapters array has enough slots
-            if (!subj.chapters) subj.chapters = [];
-            subj.chapters[material.index] = material.data;
-        } else if (material.type === 'playlist') {
-            if (!subj.playlists) subj.playlists = [];
-            subj.playlists.push(material.data);
-        } else if (material.type === 'task') {
-            if (!subj.tasks) subj.tasks = [];
-            subj.tasks.push(material.data);
-        }
-
-        await fs.writeFile(MATERIALS_FILE, JSON.stringify(materials));
-        res.json({ success: true });
-    } catch (err) {
-        console.error("Material Save Error:", err);
-        res.status(500).json({ error: "Failed to update materials" });
-    }
-});
-
-app.delete('/api/admin/material/:subjectId/:type/:index', adminAuth, async (req, res) => {
-    const { subjectId, type, index } = req.params;
-    try {
-        const data = await fs.readFile(MATERIALS_FILE, 'utf8');
-        let materials = JSON.parse(data);
-        if (materials[subjectId] && materials[subjectId][type + 's']) {
-            materials[subjectId][type + 's'].splice(index, 1);
-            await fs.writeFile(MATERIALS_FILE, JSON.stringify(materials));
-            res.json({ success: true });
-        } else {
-            res.status(404).json({ error: "Not found" });
-        }
-    } catch (err) {
-        res.status(500).json({ error: "Error deleting" });
-    }
-});
-
-app.post('/api/admin/grade', adminAuth, async (req, res) => {
-    const { student } = req.body; // student: { id, name, gpa, grades: [...] }
-    if (!student || !student.id) return res.status(400).json({ error: "Data missing" });
-
-    try {
-        const data = await fs.readFile(GRADES_FILE, 'utf8');
-        let students = JSON.parse(data);
-        const index = students.findIndex(s => s.id === student.id);
-        if (index > -1) students[index] = student; // Update existing
-        else students.push(student); // Add new
-
-        await fs.writeFile(GRADES_FILE, JSON.stringify(students));
-        res.json({ success: true });
-    } catch (err) {
-        res.status(500).json({ error: "Failed to save grades" });
-    }
-});
-
-app.delete('/api/admin/grade/:id', adminAuth, async (req, res) => {
-    try {
-        const data = await fs.readFile(GRADES_FILE, 'utf8');
-        let students = JSON.parse(data);
-        const filtered = students.filter(s => s.id !== req.params.id);
-        await fs.writeFile(GRADES_FILE, JSON.stringify(filtered));
-        res.json({ success: true });
-    } catch (err) {
-        res.status(500).json({ error: "Failed to delete student" });
-    }
-});
-
-app.post('/api/admin/upload', adminAuth, upload.single('file'), (req, res) => {
-    if (!req.file) return res.status(400).json({ error: "No file uploaded" });
-    res.json({ success: true, filePath: `/uploads/${req.file.filename}` });
-});
-
-app.post('/api/update', (req, res) => {
-    const { type, subject, fileName, name } = req.body;
-    if (type === 'material') {
-        io.emit('new_material', { subject, type: req.body.materialType, fileName });
-        return res.json({ success: true });
-    }
-    if (type === 'tool') {
-        io.emit('new_tool', { name });
-        return res.json({ success: true });
-    }
-    res.status(400).json({ success: false });
 });
 
 io.on('connection', (socket) => {

@@ -58,7 +58,8 @@
             <li class="active" data-section="home"><i class="fas fa-home"></i> <span>Home</span></li>
             <li data-section="materials"><i class="fas fa-book"></i> <span>Materials</span></li>
             <li data-section="editor"><i class="fas fa-code"></i> <span>Code Editor</span></li>
-            <li data-section="announcements"><i class="fas fa-bullhorn"></i> <span>Announcements</span></li>
+            <li data-section="materials"><i class="fas fa-book"></i> <span>Materials</span></li>
+            <li data-section="editor"><i class="fas fa-code"></i> <span>Code Editor</span></li>
             <li data-section="grades"><i class="fas fa-graduation-cap"></i> <span>Student Grades</span></li>
         </ul>
 
@@ -160,11 +161,7 @@
                         <h3>Student Grades</h3>
                         <p>Check your academic results and GPA status.</p>
                     </div>
-                    <div class="card glass-card" onclick="showSection('announcements')">
-                        <i class="fas fa-bullhorn card-icon"></i>
-                        <h3>Announcements</h3>
-                        <p>Stay updated with the latest news from your department.</p>
-                    </div>
+
                 </div>
             </div>
 
@@ -338,30 +335,7 @@
 
 
 
-        <!-- ANNOUNCEMENTS SECTION -->
-        <section id="announcements" class="view hidden-view">
-            <button class="btn-back" onclick="showSection('home')"><i class="fas fa-arrow-left"></i> Back to
-                Home</button>
-            <div class="section-header">
-                <h2>📢 Announcements</h2>
-                <p>Stay updated with the latest news, schedules, and important broadcasts.</p>
-            </div>
 
-            <div class="announcement-controls">
-                <button id="enableNotifications" class="btn btn-secondary pulse-btn">
-                    <i class="fas fa-bell"></i> Enable Push Notifications
-                </button>
-                <p id="notificationStatus" class="status-text"></p>
-            </div>
-
-            <div id="announcementFeed" class="announcement-feed">
-                <!-- Announcements will be injected here -->
-                <div class="loading-state">
-                    <i class="fas fa-spinner fa-spin"></i>
-                    <p>Fetching latest announcements...</p>
-                </div>
-            </div>
-        </section>
 
         <!-- ACADEMIC SCHEDULE SECTION -->
         <section id="schedule" class="view hidden-view">
@@ -463,125 +437,7 @@
             </div>
         </section>
 
-        <!-- ADMIN DASHBOARD SECTION -->
-        <section id="admin" class="view hidden-view">
-            <button class="btn-back" onclick="showSection('home')"><i class="fas fa-arrow-left"></i> Back to
-                Home</button>
-            <div class="section-header">
-                <h2>🛠️ Admin Command Center</h2>
-                <p>Strategic management of CyberHub internal systems.</p>
-            </div>
 
-            <div class="admin-layout">
-                <aside class="admin-sidebar" id="adminSidebar">
-                    <div class="admin-nav-item active" onclick="switchAdminTab('announcements')">
-                        <i class="fas fa-bullhorn"></i> Announcements
-                    </div>
-                    <div class="admin-nav-item" onclick="switchAdminTab('materials')">
-                        <i class="fas fa-file-medical"></i> Materials
-                    </div>
-                </aside>
-
-                <div class="admin-content-area">
-                    <!-- Announcements Tab -->
-                    <div id="tab-announcements" class="admin-tab">
-                        <div class="admin-card">
-                            <h3><i class="fas fa-plus-circle"></i> Broadcast New Announcement</h3>
-                            <div class="admin-input-group">
-                                <label>Message Body</label>
-                                <textarea id="adminAnnouncementText" placeholder="Target message for all users..."
-                                    rows="4"></textarea>
-                            </div>
-                            <button class="btn btn-primary" onclick="postAdminAnnouncement()"
-                                style="width: 100%;">Deploy & Notify</button>
-                        </div>
-                        <div class="admin-card" style="margin-top: 2rem;">
-                            <h3><i class="fas fa-history"></i> Transmission History</h3>
-                            <div id="adminAnnouncementList" class="admin-list"></div>
-                        </div>
-                    </div>
-
-                    <!-- Materials Tab -->
-                    <div id="tab-materials" class="admin-tab" style="display: none;">
-                        <div class="admin-card">
-                            <h3><i class="fas fa-folder-plus"></i> Source Material Injector</h3>
-                            <div class="admin-form-row">
-                                <div class="admin-input-group">
-                                    <label>Target Subject</label>
-                                    <select id="adminSubjectSelect"
-                                        onchange="loadAdminMaterials(); toggleAdminMaterialFields();">
-                                        <option value="math2">رياضيات 2</option>
-                                        <option value="prog2">برمجة 2</option>
-                                        <option value="discrete">تراكيب محددة</option>
-                                        <option value="social">قضايا اجتماعية</option>
-                                        <option value="reports">كتابة التقارير</option>
-                                        <option value="datacom">تراسل البيانات</option>
-                                    </select>
-                                </div>
-                                <div class="admin-input-group">
-                                    <label>Resource Category</label>
-                                    <select id="adminMaterialType" onchange="toggleAdminMaterialFields()">
-                                        <option value="playlist">Playlist (Video)</option>
-                                        <option value="chapter">Chapter (PDF File)</option>
-                                        <option value="task">Task (Code/Assignment)</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div id="adminChapterSelectRow" class="admin-input-group" style="display: none;">
-                                <label>Select Chapter Slot</label>
-                                <div style="display: flex; gap: 10px;">
-                                    <select id="adminChapterIndex" style="flex: 1;">
-                                        <option value="0">Chapter 1</option>
-                                        <option value="1">Chapter 2</option>
-                                        <option value="2">Chapter 3</option>
-                                        <option value="3">Chapter 4</option>
-                                        <option value="4">Chapter 5</option>
-                                    </select>
-                                    <button class="btn btn-secondary" onclick="prepareNewChapterSlot()"
-                                        style="width: auto; padding: 0 15px; font-size: 0.8rem; white-space: nowrap;">
-                                        <i class="fas fa-plus"></i> New Chapter
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div class="admin-input-group">
-                                <label id="adminMatNameLabel">Asset Title</label>
-                                <input type="text" id="adminMatName" placeholder="e.g. Overview & Intro">
-                            </div>
-
-                            <div id="adminUrlRow" class="admin-input-group">
-                                <label id="adminMatUrlLabel">URL / Link</label>
-                                <div style="display: flex; gap: 10px;">
-                                    <input type="text" id="adminMatUrl" placeholder="Link to video or file..."
-                                        style="flex: 1;">
-                                    <input type="file" id="adminFileInput" style="display: none;"
-                                        onchange="handleAdminFileUpload()">
-                                    <button id="adminUploadBtn" class="btn btn-secondary"
-                                        onclick="document.getElementById('adminFileInput').click()"
-                                        style="width: auto; padding: 0 15px; font-size: 0.8rem; white-space: nowrap; display: none;">
-                                        <i class="fas fa-upload"></i> Upload PDF/File
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div id="adminContentRow" class="admin-input-group" style="display: none;">
-                                <label>Task Content</label>
-                                <textarea id="adminMatContent" placeholder="Task description or code..."
-                                    rows="3"></textarea>
-                            </div>
-
-                            <button class="btn btn-secondary" onclick="addMaterialToSubject()"
-                                style="width: 100%;">Authorize Injection</button>
-                        </div>
-                        <div class="admin-card" style="margin-top: 2rem;">
-                            <h3><i class="fas fa-database"></i> Resource Repositories</h3>
-                            <div id="adminMaterialsList" class="admin-list"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
     </main>
 
     <!-- Support Modal -->
@@ -642,33 +498,15 @@
                 </div>
             </div>
             <div class="copyright">
-                <p>&copy; 2026 CyberHub – Designed by Eng/Ahmed Gamal | <a href="javascript:void(0)"
-                        onclick="openAdminLogin()"
-                        style="color: inherit; text-decoration: none; opacity: 0.3;">Admin</a></p>
+                <p>&copy; 2026 CyberHub – Designed by Eng/Ahmed Gamal</p>
             </div>
         </div>
     </footer>
 
-    <!-- Admin Login Modal -->
-    <div id="adminLoginModal" class="modal">
-        <div class="modal-content glass-card" style="max-width: 400px;">
-            <span class="close-modal"
-                onclick="document.getElementById('adminLoginModal').style.display='none'">&times;</span>
-            <h2><i class="fas fa-lock"></i> Admin Access</h2>
-            <div class="input-group" style="margin: 1.5rem 0;">
-                <label>Admin Password</label>
-                <input type="password" id="adminPasswordInput" placeholder="••••••••">
-            </div>
-            <button class="btn btn-primary" onclick="submitAdminLogin()" style="width: 100%;">Login</button>
-        </div>
-    </div>
 
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
+
+
+
     <script src="script.js?v=1.6"></script>
 </body>
 
