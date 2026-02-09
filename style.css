@@ -111,15 +111,19 @@
     box-sizing: border-box;
 }
 
+html,
+body {
+    overflow-x: hidden;
+    width: 100%;
+}
+
 body {
     background-color: #020617;
     color: var(--text-main);
     font-family: var(--font-main);
     line-height: 1.6;
-    overflow-x: hidden;
     position: relative;
     min-height: 100vh;
-    /* Remove default continuous transition to avoid lag */
 }
 
 /* Specific class for smooth theme switching - Optimized to avoid universal selector '*' */
@@ -2995,7 +2999,7 @@ footer {
 }
 
 /* Responsive */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
     .navbar {
         padding: 0.8rem 1rem;
         gap: 8px;
@@ -3003,16 +3007,12 @@ footer {
     }
 
     .logo {
-        font-size: 0.9rem;
-        gap: 4px;
-        flex: 1;
-        min-width: 0;
+        font-size: 1.1rem;
+        gap: 6px;
     }
 
     .logo-text {
-        white-space: nowrap;
-        overflow: visible;
-        max-width: none;
+        font-size: 1rem;
     }
 
     .nav-links {
@@ -3024,31 +3024,40 @@ footer {
         flex-direction: column;
         position: absolute;
         top: calc(100% + 10px);
-        right: 10px;
-        left: 10px;
+        right: 15px;
+        left: 15px;
         width: auto;
-        background: #0f172a;
-        /* Solid background */
-        padding: 1rem;
+        background: rgba(15, 23, 42, 0.98);
+        padding: 1.5rem;
         z-index: 2000;
-        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 243, 255, 0.1);
-        border: 1px solid rgba(255, 255, 255, 0.05);
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 20px;
-        gap: 8px;
-        backdrop-filter: blur(20px);
+        gap: 12px;
+        backdrop-filter: blur(25px);
         animation: menuFadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    @keyframes menuFadeIn {
-        from {
-            opacity: 0;
-            transform: translateY(-10px);
-        }
+    .mobile-menu-btn {
+        display: flex !important;
+    }
+}
 
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+@keyframes menuFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (max-width: 768px) {
+    .logo {
+        font-size: 0.95rem;
     }
 
     .nav-links.active li {
