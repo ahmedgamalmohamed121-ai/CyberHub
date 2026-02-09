@@ -915,12 +915,25 @@ window.toggleMobileMenu = () => {
 
 // --- SUBJECT MATERIALS SYSTEM ---
 let SUBJECT_DATA = {
-    math2: { title: "رياضيات 2", chapters: [{ name: "Chapter 1" }, { name: "Chapter 2" }, { name: "Chapter 3" }, { name: "Chapter 4" }, { name: "Chapter 5" }], playlists: [], tasks: [] },
+    math2: {
+        title: "رياضيات 2",
+        chapters: [
+            { name: "Chapter 1", file: "رياضيات 2/Math_2.pdf" },
+            { name: "Chapter 2" },
+            { name: "Chapter 3" },
+            { name: "Chapter 4" },
+            { name: "Chapter 5" }
+        ],
+        playlists: [
+            { name: "Playlist 1 (رياضيات 2)", url: "https://youtube.com/playlist?list=PLsQO4gY4v8bmFCTEOzYcXP5itgwboSw4y&si=JtNIIBRvah_-q9zV" }
+        ],
+        tasks: []
+    },
     prog2: { title: "برمجة 2", chapters: [{ name: "Chapter 1" }, { name: "Chapter 2" }, { name: "Chapter 3" }, { name: "Chapter 4" }, { name: "Chapter 5" }], playlists: [], tasks: [] },
     discrete: {
         title: "تراكيب محددة",
         chapters: [
-            { name: "Chapter 1", file: "Chapter 1 Set theory.pdf" },
+            { name: "Chapter 1", file: "تراكيب محددة/Chapter 1 Set theory.pdf" },
             { name: "Chapter 2" },
             { name: "Chapter 3" },
             { name: "Chapter 4" },
@@ -939,19 +952,31 @@ let SUBJECT_DATA = {
         ]
     },
     social: { title: "قضايا اجتماعية", chapters: [{ name: "Chapter 1" }, { name: "Chapter 2" }, { name: "Chapter 3" }, { name: "Chapter 4" }, { name: "Chapter 5" }], playlists: [], tasks: [] },
-    reports: { title: "كتابة التقارير", chapters: [{ name: "Chapter 1" }, { name: "Chapter 2" }, { name: "Chapter 3" }, { name: "Chapter 4" }, { name: "Chapter 5" }], playlists: [], tasks: [] },
+    reports: {
+        title: "كتابة التقارير",
+        chapters: [
+            { name: "Chapter 1", file: "كتابة تقارير/Report Writing and Presentation skills 2025.pdf" },
+            { name: "Chapter 2" },
+            { name: "Chapter 3" },
+            { name: "Chapter 4" },
+            { name: "Chapter 5" }
+        ],
+        playlists: [
+            { name: "Playlist 1 (كتابة التقارير)", url: "https://www.youtube.com/watch?v=mdjyeHaWCgU&list=PLMzaNeHCFdm_kDzoxwO8t2wVcypqOhXCt" }
+        ],
+        tasks: []
+    },
     datacom: { title: "تراسل البيانات", chapters: [{ name: "Chapter 1" }, { name: "Chapter 2" }, { name: "Chapter 3" }, { name: "Chapter 4" }, { name: "Chapter 5" }], playlists: [], tasks: [] }
 };
 
 async function loadMaterials() {
     try {
-        const response = await fetch('/api/materials');
+        const response = await fetch('data/materials.json?v=1.8');
         const data = await response.json();
-        // Merge with defaults if needed, or just replace
-        if (Object.keys(data).length > 0) {
-            SUBJECT_DATA = { ...SUBJECT_DATA, ...data };
+        if (data && Object.keys(data).length > 0) {
+            SUBJECT_DATA = data;
         }
-    } catch (err) { console.error("Failed to load materials from server, using local defaults."); }
+    } catch (err) { console.error("Failed to load materials from JSON, using code defaults."); }
 }
 loadMaterials();
 
