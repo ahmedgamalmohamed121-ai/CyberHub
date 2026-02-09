@@ -16,9 +16,27 @@ const LANGUAGE_IDS = {
 // --- JUDGE0 CONFIG ---
 let RAPIDAPI_KEY = localStorage.getItem('judge0_api_key') || "";
 let JUDGE0_BASE_URL = localStorage.getItem('judge0_base_url') || "https://ce.judge0.com";
-const RAPIDAPI_HOST = new URL(JUDGE0_BASE_URL).host;
 
-const MONACO_MODES = { 'python': 'python', 'javascript': 'javascript', 'cpp': 'cpp', 'c': 'c', 'java': 'java', 'php': 'php', 'sql': 'sql' };
+let RAPIDAPI_HOST = "";
+try {
+    if (JUDGE0_BASE_URL.includes('://')) {
+        RAPIDAPI_HOST = new URL(JUDGE0_BASE_URL).host;
+    } else {
+        RAPIDAPI_HOST = JUDGE0_BASE_URL.split('/')[0];
+    }
+} catch (e) {
+    RAPIDAPI_HOST = "ce.judge0.com";
+}
+
+const MONACO_MODES = {
+    'python': 'python',
+    'javascript': 'javascript',
+    'cpp': 'cpp',
+    'c': 'c',
+    'java': 'java',
+    'php': 'php',
+    'sql': 'sql'
+};
 
 // Security: Escape HTML to prevent XSS
 function escapeHTML(str) {
