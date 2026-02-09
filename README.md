@@ -28,5 +28,3 @@ A modern, high-performance educational website for Computer Science & Cyber Secu
 ## Credits
 
 Designed by **Eng/Ahmed Gamal** (2026).
-
-<!-- Deployment Refresh: 2026-02-09 19:08 -->
