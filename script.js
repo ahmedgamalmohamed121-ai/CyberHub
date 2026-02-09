@@ -983,7 +983,7 @@ window.openSubject = (id) => {
         chaptersList.innerHTML = data.chapters.map(ch => `
             <li class="resource-item">
                 <span><i class="fas fa-folder-open"></i> ${escapeHTML(ch.name)}</span>
-                <button class="btn-xs download" onclick="${ch.file ? `window.open('${escapeHTML(ch.file)}', '_blank')` : "alert('قريباً.. الملف قيد الرفع')"}">Open</button>
+                <button class="btn-xs download" onclick="${ch.file ? `window.open('${escapeHTML(ch.file)}', '_blank')` : "alert('📚 لم يتم رفع هذا الفصل حتى الآن\\n\\nسيتم رفع الملف قريباً إن شاء الله')"}">Open</button>
             </li>
         `).join('');
     }
