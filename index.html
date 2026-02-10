@@ -61,6 +61,7 @@
         <ul class="nav-links">
             <li class="active" data-section="home"><i class="fas fa-home"></i> <span>Home</span></li>
             <li data-section="materials"><i class="fas fa-book"></i> <span>Materials</span></li>
+            <li data-section="announcements"><i class="fas fa-bullhorn"></i> <span>Announcements</span></li>
             <li data-section="editor"><i class="fas fa-code"></i> <span>Code Editor</span></li>
             <li data-section="grades"><i class="fas fa-graduation-cap"></i> <span>Student Grades</span></li>
         </ul>
@@ -253,6 +254,25 @@
                             </ul>
                         </div>
                     </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ANNOUNCEMENTS SECTION -->
+        <section id="announcements" class="view hidden-view">
+            <button class="btn-back" onclick="showSection('home')"><i class="fas fa-arrow-left"></i> Back to
+                Home</button>
+            <div class="section-header">
+                <h2>CyberHub <span class="highlight">Announcements</span></h2>
+                <p>Stay updated with the latest news, updates, and academic alerts.</p>
+            </div>
+
+            <div id="announcementFeed" class="announcement-feed">
+                <!-- Skeleton Loading State -->
+                <div class="announcement-skeleton">
+                    <div class="skeleton-header"></div>
+                    <div class="skeleton-body"></div>
+                    <div class="skeleton-body short"></div>
                 </div>
             </div>
         </section>
@@ -508,6 +528,10 @@
 
 
 
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
     <script src="script.js?v=1.8"></script>
 </body>

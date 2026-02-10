@@ -73,22 +73,18 @@
                             <span>Send Push Notification to all users</span>
                         </div>
 
-                        <button id="postBtn" class="btn btn-primary" onclick="sendPushNotification()">
-                            <i class="fas fa-paper-plane"></i> Send Push Notification
+                        <button id="postBtn" class="btn btn-primary" onclick="postAnnouncement()">
+                            <i class="fas fa-paper-plane"></i> Publish & Notify
                         </button>
                     </div>
                 </div>
 
-                <!-- Subscriber Info -->
+                <!-- Active Announcements List -->
                 <div class="admin-card glass-card">
-                    <h3><i class="fas fa-users"></i> Subscribers</h3>
-                    <div class="admin-feed-list">
-                        <p class="empty-msg">Notifications will be sent to ALL users who allowed browser permissions.
-                        </p>
-                        <div class="info-box">
-                            <i class="fas fa-info-circle"></i>
-                            <p>Make sure you have configured your OneSignal REST API Key in script.js</p>
-                        </div>
+                    <h3><i class="fas fa-list-ul"></i> Active Feed</h3>
+                    <div id="adminFeedList" class="admin-feed-list">
+                        <!-- Items injected via JS -->
+                        <p class="empty-msg">Loading current feed...</p>
                     </div>
                 </div>
             </div>
