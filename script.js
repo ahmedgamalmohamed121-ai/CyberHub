@@ -1241,22 +1241,33 @@ window.logoutAdmin = () => {
     location.reload();
 };
 
-// 2. OneSignal Integration
-window.OneSignal = window.OneSignal || [];
+// 2. OneSignal Integration (v16)
+window.OneSignalDeferred = window.OneSignalDeferred || [];
 const ONESIGNAL_APP_ID = "7120fe27-c5b8-4b22-8c2f-64b18f99f83b";
 const ONESIGNAL_REST_API_KEY = "os_v2_app_oeqp4j6fxbecfdbpmsyy7gpyhniussvrcaiusenafhxutm2ipju2zedu2lrsjcfknjhi5hyft6uxlcyfbyzjploia5gvft4ir7ivyqi";
 
-if (ONESIGNAL_APP_ID && !ONESIGNAL_APP_ID.includes('YOUR_')) {
-    OneSignal.push(function () {
-        OneSignal.init({
+if (ONESIGNAL_APP_ID) {
+    OneSignalDeferred.push(async function (OneSignal) {
+        await OneSignal.init({
             appId: ONESIGNAL_APP_ID,
-            notifyButton: {
-                enable: true,
-                text: { 'tip.state.unsubscribed': 'Subscribe for Notifications 🔔' }
-            }
+            allowLocalhostAsSecureOrigin: true // Helpful for testing
         });
     });
 }
+
+// Helper for the custom button
+window.triggerPushPrompt = () => {
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    OneSignalDeferred.push(async function (OneSignal) {
+        try {
+            await OneSignal.Slidedown.promptPush();
+        } catch (e) {
+            console.error("OneSignal Prompt Error:", e);
+            // Fallback to older method if available
+            if (OneSignal.showNativePrompt) OneSignal.showNativePrompt();
+        }
+    });
+};
 
 window.postAnnouncement = async () => {
     const title = document.getElementById('notifTitle').value;
