@@ -1257,14 +1257,17 @@ if (ONESIGNAL_APP_ID) {
 
 // Helper for the custom button
 window.triggerPushPrompt = () => {
-    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    alert("جارٍ تشغيل نظام الإشعارات... انتظر لحظة");
+    if (typeof OneSignalDeferred === 'undefined') {
+        alert("خطأ: نظام الإشعارات لم يتم تحميله بعد.");
+        return;
+    }
     OneSignalDeferred.push(async function (OneSignal) {
         try {
             await OneSignal.Slidedown.promptPush();
         } catch (e) {
             console.error("OneSignal Prompt Error:", e);
-            // Fallback to older method if available
-            if (OneSignal.showNativePrompt) OneSignal.showNativePrompt();
+            alert("حدث خطأ في النظام: " + e.message);
         }
     });
 };
