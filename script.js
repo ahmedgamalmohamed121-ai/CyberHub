@@ -154,36 +154,62 @@ function setupEventListeners() {
     const outputPanel = document.getElementById('editorOutput');
     let isResizing = false;
 
-    resizer.addEventListener('mousedown', (e) => {
+    const startResizing = (clientY) => {
         isResizing = true;
         document.body.style.cursor = 'row-resize';
         document.body.style.userSelect = 'none';
-    });
+        document.body.classList.add('resizing');
+    };
 
-    window.addEventListener('mousemove', (e) => {
-        if (!isResizing) return;
-
-        const container = document.querySelector('.editor-container');
-        const containerRect = container.getBoundingClientRect();
-        const relativeY = e.clientY - containerRect.top;
-
-        // Calculate new height for output panel
-        // container height - relativeY - resizer height
-        const newHeight = containerRect.height - relativeY - resizer.offsetHeight;
-
-        if (newHeight > 80 && newHeight < containerRect.height * 0.8) {
-            outputPanel.style.height = `${newHeight}px`;
-            if (editor) editor.layout(); // Refresh Monaco
-        }
-    });
-
-    window.addEventListener('mouseup', () => {
+    const stopResizing = () => {
         if (isResizing) {
             isResizing = false;
             document.body.style.cursor = 'default';
             document.body.style.userSelect = 'auto';
+            document.body.classList.remove('resizing');
+            if (editor) editor.layout();
         }
-    });
+    };
+
+    const handleResizing = (clientY) => {
+        if (!isResizing) return;
+
+        const container = document.querySelector('.editor-container');
+        const containerRect = container.getBoundingClientRect();
+        const relativeY = clientY - containerRect.top;
+
+        // Calculate new height for output panel
+        const newHeight = containerRect.height - relativeY - resizer.offsetHeight;
+
+        // Minimum heights for both parts
+        const minOutputHeight = 60;
+        const maxOutputHeight = containerRect.height - 120;
+
+        if (newHeight >= minOutputHeight && newHeight <= maxOutputHeight) {
+            outputPanel.style.height = `${newHeight}px`;
+            if (editor) editor.layout(); // Refresh Monaco
+        }
+    };
+
+    // Mouse Events
+    resizer.addEventListener('mousedown', (e) => startResizing(e.clientY));
+    window.addEventListener('mousemove', (e) => handleResizing(e.clientY));
+    window.addEventListener('mouseup', stopResizing);
+
+    // Touch Events (Mobile Support)
+    resizer.addEventListener('touchstart', (e) => {
+        if (e.touches.length > 0) startResizing(e.touches[0].clientY);
+    }, { passive: true });
+
+    window.addEventListener('touchmove', (e) => {
+        if (isResizing && e.touches.length > 0) {
+            handleResizing(e.touches[0].clientY);
+            // Prevent scroll while resizing
+            if (e.cancelable) e.preventDefault();
+        }
+    }, { passive: false });
+
+    window.addEventListener('touchend', stopResizing);
 }
 
 function switchOutputTab(tabId) {
@@ -1115,10 +1141,106 @@ window.onclick = (event) => {
     }
 };
 
+/* =========================================
+   CYBERHUB PUSH NOTIFICATIONS LOGIC
+   ========================================= */
 
+// 1. Admin Login Logic
+window.verifyAdmin = () => {
+    const pass = document.getElementById('adminPassInput').value;
+    if (pass === "CyberHub@2026") { // Placeholder password - CHANGE THIS!
+        document.getElementById('adminLoginOverlay').style.display = 'none';
+        document.getElementById('adminContent').style.display = 'block';
+        localStorage.setItem('cyberhub_admin', 'true');
+    } else {
+        document.getElementById('loginError').innerText = "Incorrect Password!";
+    }
+};
 
+window.logoutAdmin = () => {
+    localStorage.removeItem('cyberhub_admin');
+    location.reload();
+};
 
+// 2. OneSignal Integration
+window.OneSignal = window.OneSignal || [];
+const ONESIGNAL_APP_ID = "7120fe27-c5b8-4b22-8c2f-64b18f99f83b"; // Updated with actual ID
 
+if (ONESIGNAL_APP_ID && !ONESIGNAL_APP_ID.includes('YOUR_')) {
+    OneSignal.push(function () {
+        OneSignal.init({
+            appId: ONESIGNAL_APP_ID,
+            notifyButton: {
+                enable: true,
+                text: { 'tip.state.unsubscribed': 'Subscribe for Notifications 🔔' }
+            }
+        });
+    });
+}
 
+window.sendPushNotification = async () => {
+    const title = document.getElementById('notifTitle').value;
+    const body = document.getElementById('notifBody').value;
+    const link = document.getElementById('notifLink').value;
 
+    if (!title || !body) return alert("Title and Message are required!");
 
+    const btn = document.getElementById('postBtn');
+    btn.disabled = true;
+    const oldHTML = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+
+    const ONESIGNAL_REST_API_KEY = "os_v2_app_oeqp4j6fxbecfdbpmsyy7gpyhniussvrcaiusenafhxutm2ipju2zedu2lrsjcfknjhi5hyft6uxlcyfbyzjploia5gvft4ir7ivyqi";
+
+    if (!ONESIGNAL_REST_API_KEY || ONESIGNAL_REST_API_KEY.includes('YOUR_')) {
+        alert("Config Error: Missing OneSignal REST API Key!");
+        btn.disabled = false;
+        btn.innerHTML = oldHTML;
+        return;
+    }
+
+    try {
+        const response = await fetch("https://onesignal.com/api/v1/notifications", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json; charset=utf-8",
+                "Authorization": "Basic " + ONESIGNAL_REST_API_KEY
+            },
+            body: JSON.stringify({
+                app_id: ONESIGNAL_APP_ID,
+                included_segments: ["All"],
+                headings: { "en": title },
+                contents: { "en": body },
+                url: link || window.location.origin
+            })
+        });
+
+        const result = await response.json();
+        if (result.id) {
+            alert("Success! Notification sent to all subscribers.");
+            // Clear form
+            document.getElementById('notifTitle').value = "";
+            document.getElementById('notifBody').value = "";
+            document.getElementById('notifLink').value = "";
+        } else {
+            alert("OneSignal Error: " + (result.errors ? result.errors[0] : "Unknown error"));
+        }
+    } catch (e) {
+        alert("Network Error: " + e.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = oldHTML;
+    }
+};
+
+// Auto-login check for admin page
+window.addEventListener('load', () => {
+    if (window.is_admin_view) {
+        if (localStorage.getItem('cyberhub_admin') === 'true') {
+            const overlay = document.getElementById('adminLoginOverlay');
+            const content = document.getElementById('adminContent');
+            if (overlay) overlay.style.display = 'none';
+            if (content) content.style.display = 'block';
+        }
+    }
+});

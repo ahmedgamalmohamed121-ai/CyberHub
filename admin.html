@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberHub | Admin Panel</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700&display=swap"
+        rel="stylesheet">
+</head>
+
+<body class="admin-page">
+    <div class="bg-blobs">
+        <div class="blob"></div>
+        <div class="blob blob-2"></div>
+    </div>
+
+    <!-- Login Overlay -->
+    <div id="adminLoginOverlay" class="admin-login-overlay">
+        <div class="glass-card login-card">
+            <i class="fas fa-lock login-icon"></i>
+            <h2>Admin Login</h2>
+            <p>Enter password to access CyberHub control panel</p>
+            <div class="input-group">
+                <input type="password" id="adminPassInput" placeholder="Enter Password...">
+            </div>
+            <button class="btn btn-primary" onclick="verifyAdmin()">Login</button>
+            <p id="loginError" class="error-text"></p>
+        </div>
+    </div>
+
+    <main id="adminContent" style="display: none;">
+        <nav class="navbar">
+            <div class="logo">
+                <span class="cyber-icon"><i class="fas fa-shield-alt"></i></span>
+                <span class="logo-text">CyberHub <span class="logo-sep">|</span> Admin</span>
+            </div>
+            <button class="btn-secondary" onclick="logoutAdmin()">Logout</button>
+        </nav>
+
+        <div class="admin-container">
+            <div class="admin-header">
+                <h1><i class="fas fa-dashboard"></i> Control Panel</h1>
+                <p>Manage announcements and push notifications</p>
+            </div>
+
+            <div class="admin-grid">
+                <!-- Post Announcement -->
+                <div class="admin-card glass-card">
+                    <h3><i class="fas fa-plus-circle"></i> New Announcement</h3>
+                    <div class="admin-form">
+                        <div class="input-group">
+                            <label>Title</label>
+                            <input type="text" id="notifTitle" placeholder="Announcement Title...">
+                        </div>
+                        <div class="input-group">
+                            <label>Message Content</label>
+                            <textarea id="notifBody" rows="4" placeholder="Write your announcement here..."></textarea>
+                        </div>
+                        <div class="input-group">
+                            <label>Action Link (Optional)</label>
+                            <input type="text" id="notifLink" placeholder="https://...">
+                        </div>
+
+                        <div class="toggle-group">
+                            <label class="switch-mini">
+                                <input type="checkbox" id="sendPushToggle" checked>
+                                <span class="slider-mini round"></span>
+                            </label>
+                            <span>Send Push Notification to all users</span>
+                        </div>
+
+                        <button id="postBtn" class="btn btn-primary" onclick="sendPushNotification()">
+                            <i class="fas fa-paper-plane"></i> Send Push Notification
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Subscriber Info -->
+                <div class="admin-card glass-card">
+                    <h3><i class="fas fa-users"></i> Subscribers</h3>
+                    <div class="admin-feed-list">
+                        <p class="empty-msg">Notifications will be sent to ALL users who allowed browser permissions.
+                        </p>
+                        <div class="info-box">
+                            <i class="fas fa-info-circle"></i>
+                            <p>Make sure you have configured your OneSignal REST API Key in script.js</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
+    <!-- Admin Logic -->
+    <script src="script.js"></script>
+    <script>
+        // Specific init for Admin Page
+        window.is_admin_view = true;
+    </script>
+</body>
+
+</html>
