@@ -1255,22 +1255,59 @@ if (ONESIGNAL_APP_ID) {
     });
 }
 
-// Helper for the custom button
+// Helper for the custom button with state handling
 window.triggerPushPrompt = () => {
-    alert("جارٍ تشغيل نظام الإشعارات... انتظر لحظة");
-    if (typeof OneSignalDeferred === 'undefined') {
-        alert("خطأ: نظام الإشعارات لم يتم تحميله بعد.");
-        return;
-    }
+    if (typeof OneSignalDeferred === 'undefined') return;
+
     OneSignalDeferred.push(async function (OneSignal) {
         try {
+            // If already subscribed, just update the UI
+            const isSubscribed = await OneSignal.User.PushSubscription.id;
+            if (isSubscribed) {
+                updatePushUI(true);
+                return;
+            }
+
+            // Prompt user
             await OneSignal.Slidedown.promptPush();
+
+            // Listen for subscription change to update UI
+            OneSignal.Notifications.addEventListener("permissionChange", (permission) => {
+                if (permission === "granted") {
+                    updatePushUI(true);
+                }
+            });
+
         } catch (e) {
             console.error("OneSignal Prompt Error:", e);
-            alert("حدث خطأ في النظام: " + e.message);
         }
     });
 };
+
+function updatePushUI(active) {
+    const btn = document.querySelector('.pulse-btn');
+    const statusText = document.querySelector('.status-text');
+    if (btn && active) {
+        btn.innerHTML = '<i class="fas fa-check-circle"></i> Notifications Active';
+        btn.classList.remove('pulse-btn');
+        btn.classList.add('disabled-btn');
+        btn.onclick = null;
+        btn.style.background = "rgba(0, 255, 157, 0.2)";
+        btn.style.color = "#00ff9d";
+        btn.style.border = "1px solid #00ff9d";
+        if (statusText) statusText.innerHTML = '<i class="fas fa-check-circle" style="color: #00ff9d"></i> You are all set!';
+    }
+}
+
+// Initial check on load
+window.addEventListener('load', () => {
+    if (typeof OneSignalDeferred !== 'undefined') {
+        OneSignalDeferred.push(async function (OneSignal) {
+            const isSubscribed = await OneSignal.User.PushSubscription.id;
+            if (isSubscribed) updatePushUI(true);
+        });
+    }
+});
 
 window.postAnnouncement = async () => {
     const title = document.getElementById('notifTitle').value;
