@@ -22,7 +22,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- CSS -->
-    <link rel="stylesheet" href="style.css?v=1.4">
+    <link rel="stylesheet" href="style.css?v=1.8">
 
     <!-- Monaco Editor -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
@@ -40,10 +40,7 @@
             }
         })();
     </script>
-    <!-- Firebase & Notifications -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+
 </head>
 
 <body>
@@ -61,9 +58,10 @@
         <ul class="nav-links">
             <li class="active" data-section="home"><i class="fas fa-home"></i> <span>Home</span></li>
             <li data-section="materials"><i class="fas fa-book"></i> <span>Materials</span></li>
-            <li data-section="announcements"><i class="fas fa-bullhorn"></i> <span>Announcements</span></li>
+
             <li data-section="editor"><i class="fas fa-code"></i> <span>Code Editor</span></li>
             <li data-section="grades"><i class="fas fa-graduation-cap"></i> <span>Student Grades</span></li>
+            <li data-section="groups"><i class="fas fa-users"></i> <span>Group Links</span></li>
         </ul>
 
         <div class="nav-actions">
@@ -163,6 +161,12 @@
                         <h3>Student Grades</h3>
                         <p>Check your academic results and GPA status.</p>
                     </div>
+                    <!-- Group Links Card -->
+                    <div class="card glass-card" onclick="showSection('groups')">
+                        <i class="fas fa-users card-icon"></i>
+                        <h3>Group Links</h3>
+                        <p>Join official student groups and communities.</p>
+                    </div>
 
                 </div>
             </div>
@@ -246,6 +250,8 @@
                             </ul>
                         </div>
 
+
+
                         <!-- Tasks Section -->
                         <div class="resource-group">
                             <h4><i class="fas fa-tasks"></i> Tasks & Assignments</h4>
@@ -258,34 +264,7 @@
             </div>
         </section>
 
-        <!-- ANNOUNCEMENTS SECTION -->
-        <section id="announcements" class="view hidden-view">
-            <button class="btn-back" onclick="showSection('home')"><i class="fas fa-arrow-left"></i> Back to
-                Home</button>
-            <div class="section-header">
-                <h2>CyberHub <span class="highlight">Announcements</span></h2>
-                <p>Stay updated with the latest news, updates, and academic alerts.</p>
-            </div>
 
-            <!-- ONE SIGNAL SUBSCRIPTION BANNER -->
-            <div id="pushSubscriptionPrompt" class="announcement-controls">
-                <div class="status-text"><i class="fas fa-bell"></i> Never miss an update!</div>
-                <button class="btn btn-primary pulse-btn" onclick="triggerPushPrompt()">
-                    <i class="fas fa-bell"></i> Enable Notifications
-                </button>
-                <p style="font-size: 0.8rem; opacity: 0.6; margin-top: 10px;">Get real-time alerts on your device for
-                    new materials and exams.</p>
-            </div>
-
-            <div id="announcementFeed" class="announcement-feed">
-                <!-- Skeleton Loading State -->
-                <div class="announcement-skeleton">
-                    <div class="skeleton-header"></div>
-                    <div class="skeleton-body"></div>
-                    <div class="skeleton-body short"></div>
-                </div>
-            </div>
-        </section>
 
         <!-- CODE EDITOR SECTION -->
         <section id="editor" class="view hidden-view">
@@ -392,6 +371,21 @@
                             Download</a>
                     </div>
                 </div>
+
+                <!-- SECTIONS FILE -->
+                <div class="schedule-item">
+                    <div class="item-icon"><i class="fas fa-chalkboard-teacher text-cyan"></i></div>
+                    <div class="item-content">
+                        <h3 class="arabic-bold">السكاشن</h3>
+                        <p>Sections File</p>
+                    </div>
+                    <div class="item-actions">
+                        <a href="السكاشن/السكاشن.pdf" target="_blank" class="btn-preview" title="Preview PDF"><i
+                                class="fas fa-eye"></i> Preview</a>
+                        <a href="السكاشن/السكاشن.pdf" download class="btn-download" title="Download PDF"><i
+                                class="fas fa-download"></i> Download</a>
+                    </div>
+                </div>
             </div>
 
             <!-- Preview Modal -->
@@ -468,6 +462,228 @@
             </div>
         </section>
 
+        <!-- GROUP LINKS SECTION -->
+        <section id="groups" class="view hidden-view">
+            <button class="btn-back" onclick="showSection('home')"><i class="fas fa-arrow-left"></i> Back to
+                Home</button>
+            <div class="section-header">
+                <h2><i class="fas fa-users"></i> Group Links</h2>
+                <p>Join our official communities and stay connected.</p>
+            </div>
+
+            <div class="groups-list-container">
+                <style>
+                    .groups-list-container {
+                        max-width: 800px;
+                        margin: 2rem auto;
+                        display: flex;
+                        flex-direction: column;
+                        gap: 1rem;
+                        padding: 0 1rem;
+                    }
+
+                    .group-item {
+                        background: rgba(30, 41, 59, 0.6);
+                        border: 1px solid rgba(255, 255, 255, 0.1);
+                        border-radius: 12px;
+                        overflow: hidden;
+                        transition: all 0.3s ease;
+                    }
+
+                    .group-header {
+                        padding: 1.2rem;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        cursor: pointer;
+                        background: rgba(255, 255, 255, 0.02);
+                    }
+
+                    .group-header:hover {
+                        background: rgba(255, 255, 255, 0.05);
+                    }
+
+                    .group-title {
+                        font-size: 1.1rem;
+                        color: #fff;
+                        display: flex;
+                        align-items: center;
+                        gap: 10px;
+                        text-align: right;
+                        width: 100%;
+                        justify-content: flex-start;
+                    }
+
+                    .group-title i {
+                        color: var(--primary-green);
+                        margin-left: 10px;
+                    }
+
+                    .group-toggle-icon {
+                        color: var(--text-muted);
+                        transition: transform 0.3s ease;
+                    }
+
+                    .group-item.active .group-toggle-icon {
+                        transform: rotate(180deg);
+                        color: var(--primary-green);
+                    }
+
+                    .group-item.active {
+                        border-color: var(--primary-green);
+                        box-shadow: 0 0 15px rgba(0, 255, 65, 0.1);
+                    }
+
+                    .group-content {
+                        max-height: 0;
+                        overflow: hidden;
+                        transition: max-height 0.3s ease-out;
+                        background: rgba(0, 0, 0, 0.2);
+                    }
+
+                    .group-content-inner {
+                        padding: 1.5rem;
+                        display: flex;
+                        justify-content: center;
+                    }
+
+                    .btn-group-link {
+                        background: linear-gradient(135deg, var(--primary-green), #00cc33);
+                        color: #000;
+                        padding: 10px 20px;
+                        border-radius: 8px;
+                        text-decoration: none;
+                        font-weight: bold;
+                        display: inline-flex;
+                        align-items: center;
+                        gap: 8px;
+                        width: 100%;
+                        justify-content: center;
+                        max-width: 300px;
+                    }
+
+                    .btn-group-link:hover {
+                        transform: translateY(-2px);
+                        box-shadow: 0 5px 15px rgba(0, 255, 65, 0.3);
+                    }
+                </style>
+
+                <!-- 1. Dr. Ahmed El-Refaie -->
+                <div class="group-item" onclick="toggleGroupItem(this)">
+                    <div class="group-header">
+                        <div class="group-title"><i class="fas fa-user-tie"></i> د/احمد الرفاعي برمجة 2 (A1,A2)</div>
+                        <i class="fas fa-chevron-down group-toggle-icon"></i>
+                    </div>
+                    <div class="group-content">
+                        <div class="group-content-inner">
+                            <a href="https://chat.whatsapp.com/KnYQd4wL3lW0Mmp7Ez2Rhk?mode=gi_t" target="_blank"
+                                class="btn-group-link"><i class="fab fa-whatsapp"></i> Join Group</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Dr. Samah Ibrahim -->
+                <div class="group-item" onclick="toggleGroupItem(this)">
+                    <div class="group-header">
+                        <div class="group-title"><i class="fas fa-user-tie"></i> د/سماح ابراهيم رياضيات 2 (A1,A3)</div>
+                        <i class="fas fa-chevron-down group-toggle-icon"></i>
+                    </div>
+                    <div class="group-content">
+                        <div class="group-content-inner">
+                            <a href="https://chat.whatsapp.com/C8btBN3f3W16pNakm1ccT9?mode=gi_t" target="_blank"
+                                class="btn-group-link"><i class="fab fa-whatsapp"></i> Join Group</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Dr. Reda Mohamed -->
+                <div class="group-item" onclick="toggleGroupItem(this)">
+                    <div class="group-header">
+                        <div class="group-title"><i class="fas fa-user-tie"></i> د/رضا محمد تراكيب محددة (A1)</div>
+                        <i class="fas fa-chevron-down group-toggle-icon"></i>
+                    </div>
+                    <div class="group-content">
+                        <div class="group-content-inner">
+                            <a href="https://chat.whatsapp.com/G2aXi6M1RrJ3ad52B0Cy2m?mode=gi_t" target="_blank"
+                                class="btn-group-link"><i class="fab fa-whatsapp"></i> Join Group</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. Dr. Ehab Roshdy -->
+                <div class="group-item" onclick="toggleGroupItem(this)">
+                    <div class="group-header">
+                        <div class="group-title"><i class="fas fa-user-tie"></i> د/ايهاب رشدي تراسل البيانات (A1,A2,A3)
+                        </div>
+                        <i class="fas fa-chevron-down group-toggle-icon"></i>
+                    </div>
+                    <div class="group-content">
+                        <div class="group-content-inner">
+                            <a href="https://chat.whatsapp.com/DL9C1jO6FaS0DJ9D2IJf75?mode=gi_t" target="_blank"
+                                class="btn-group-link"><i class="fab fa-whatsapp"></i> Join Group</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. Dr. Al-Shaimaa El-Tantawy -->
+                <div class="group-item" onclick="toggleGroupItem(this)">
+                    <div class="group-header">
+                        <div class="group-title"><i class="fas fa-user-tie"></i> د/الشيماء الطنطاوي كتابة التقارير
+                            (A1,A2)</div>
+                        <i class="fas fa-chevron-down group-toggle-icon"></i>
+                    </div>
+                    <div class="group-content">
+                        <div class="group-content-inner">
+                            <a href="https://chat.whatsapp.com/BOgQKNxT9C5LQd6L6SPk1Y?mode=gi_t" target="_blank"
+                                class="btn-group-link"><i class="fab fa-whatsapp"></i> Join Group</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 6. Dr. Amal Farouk -->
+                <div class="group-item" onclick="toggleGroupItem(this)">
+                    <div class="group-header">
+                        <div class="group-title"><i class="fas fa-user-tie"></i> د/امل فاروق رياضيات2 (A2)</div>
+                        <i class="fas fa-chevron-down group-toggle-icon"></i>
+                    </div>
+                    <div class="group-content">
+                        <div class="group-content-inner">
+                            <a href="https://chat.whatsapp.com/GRq6ZgimbID3qc2v5cwqmf?mode=gi_t" target="_blank"
+                                class="btn-group-link"><i class="fab fa-whatsapp"></i> Join Group</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 7. Dr. Laila Abdel-Fattah -->
+                <div class="group-item" onclick="toggleGroupItem(this)">
+                    <div class="group-header">
+                        <div class="group-title"><i class="fas fa-user-tie"></i> د/ليلي عبدالفتاح برمجة 2 (A3)</div>
+                        <i class="fas fa-chevron-down group-toggle-icon"></i>
+                    </div>
+                    <div class="group-content">
+                        <div class="group-content-inner">
+                            <a href="https://chat.whatsapp.com/BoliTLvh2EBDCkSGUITU6q?mode=gi_t" target="_blank"
+                                class="btn-group-link"><i class="fab fa-whatsapp"></i> Join Group</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 8. Dr. May Abdel-Sattar -->
+                <div class="group-item" onclick="toggleGroupItem(this)">
+                    <div class="group-header">
+                        <div class="group-title"><i class="fas fa-user-tie"></i> دكتور/ مي عبدالستار القضاية الاجتماية
+                            (A1)</div>
+                        <i class="fas fa-chevron-down group-toggle-icon"></i>
+                    </div>
+                    <div class="group-content">
+                        <div class="group-content-inner">
+                            <a href="https://chat.whatsapp.com/F9JXUPXavdTCZE2chWLZqK?mode=gi_t" target="_blank"
+                                class="btn-group-link"><i class="fab fa-whatsapp"></i> Join Group</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
 
     </main>
 
@@ -539,9 +755,7 @@
 
 
 
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
 
     <script src="script.js?v=1.8"></script>
 </body>

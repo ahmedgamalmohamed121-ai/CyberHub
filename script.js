@@ -124,6 +124,7 @@ function setupEventListeners() {
         li.addEventListener('click', () => {
             const section = li.getAttribute('data-section');
             if (section) showSection(section);
+            document.querySelector('.nav-links').classList.remove('active');
         });
     });
 
@@ -803,12 +804,9 @@ function showSection(id) {
     if (id === 'editor' && editor) {
         setTimeout(() => editor.layout(), 50);
     }
-
-    // Fetch announcements if section is shown
-    if (id === 'announcements' && typeof fetchAnnouncements !== 'undefined') {
-        fetchAnnouncements();
-    }
 }
+
+
 
 function toggleTheme() {
     const isLight = document.documentElement.classList.toggle('light-mode');
@@ -949,12 +947,9 @@ let SUBJECT_DATA = {
     math2: {
         title: "رياضيات 2",
         chapters: [
-            { name: "Chapter 1", file: "رياضيات 2/Math_2.pdf" },
-            { name: "Chapter 2" },
-            { name: "Chapter 3" },
-            { name: "Chapter 4" },
-            { name: "Chapter 5" }
+            { name: "Book", file: "رياضيات 2/Math_2.pdf" }
         ],
+
         playlists: [
             { name: "Playlist 1 (رياضيات 2)", url: "https://youtube.com/playlist?list=PLsQO4gY4v8bmFCTEOzYcXP5itgwboSw4y&si=JtNIIBRvah_-q9zV" }
         ],
@@ -1043,6 +1038,8 @@ window.openSubject = (id) => {
             </li>
         `).join('');
     }
+
+
 
     // Inject Tasks
     const tasksList = document.getElementById('tasksList');
@@ -1146,233 +1143,25 @@ window.onclick = (event) => {
     }
 };
 
-/* =========================================
-   CYBERHUB ANNOUNCEMENTS & PUSH LOGIC
-   ========================================= */
-
-// Instructions: Replace these placeholders with your actual Firebase config
-const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_AUTH_DOMAIN",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_STORAGE_BUCKET",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
-};
-
-// Initialize Firebase if configured
-if (typeof firebase !== 'undefined' && firebaseConfig.apiKey && !firebaseConfig.apiKey.includes('YOUR_')) {
-    if (!firebase.apps.length) {
-        firebase.initializeApp(firebaseConfig);
-    }
-    const db = firebase.database();
-
-    // 1. Fetch & Display Announcements
-    window.fetchAnnouncements = () => {
-        const feed = document.getElementById('announcementFeed');
-        const adminFeed = document.getElementById('adminFeedList');
-
-        db.ref('announcements').orderByChild('timestamp').on('value', (snapshot) => {
-            const data = snapshot.val();
-            let items = [];
-            if (data) {
-                items = Object.keys(data).map(key => ({ id: key, ...data[key] })).reverse();
-            }
-
-            if (feed) {
-                if (items.length === 0) {
-                    feed.innerHTML = `<div class="empty-state"><i class="fas fa-info-circle"></i><p>No announcements yet.</p></div>`;
-                } else {
-                    feed.innerHTML = items.map(item => `
-                        <div class="announcement-card">
-                            <div class="announcement-header">
-                                <span class="announcement-badge">${escapeHTML(item.category || 'Update')}</span>
-                                <span class="announcement-date">${new Date(item.timestamp).toLocaleDateString()}</span>
-                            </div>
-                            <h3>${escapeHTML(item.title)}</h3>
-                            <p>${escapeHTML(item.body)}</p>
-                            ${item.link ? `<a href="${escapeHTML(item.link)}" target="_blank" class="btn-announcement">Read More <i class="fas fa-arrow-right"></i></a>` : ''}
-                        </div>
-                    `).join('');
-                }
-            }
-
-            if (adminFeed) {
-                adminFeed.innerHTML = items.map(item => `
-                    <div class="admin-feed-item">
-                        <div class="admin-feed-info">
-                            <h4>${escapeHTML(item.title)}</h4>
-                            <p>${new Date(item.timestamp).toLocaleString()}</p>
-                        </div>
-                        <button class="btn-delete" onclick="deleteAnnouncement('${item.id}')"><i class="fas fa-trash"></i></button>
-                    </div>
-                `).join('');
-            }
-        });
-    };
-
-    window.deleteAnnouncement = (id) => {
-        if (confirm("Are you sure you want to delete this?")) {
-            db.ref('announcements/' + id).remove();
+window.toggleGroupItem = (element) => {
+    // 1. Close any OTHER open items
+    document.querySelectorAll('.group-item.active').forEach(item => {
+        if (item !== element) {
+            item.classList.remove('active');
+            item.querySelector('.group-content').style.maxHeight = null;
         }
-    };
-} else {
-    window.fetchAnnouncements = () => {
-        const feed = document.getElementById('announcementFeed');
-        if (feed) feed.innerHTML = `<div class="empty-state"><i class="fas fa-plug"></i><p>Firebase not configured. Please add config in script.js.</p></div>`;
-    };
-}
+    });
 
-// 1. Admin Login Logic
-window.verifyAdmin = () => {
-    const pass = document.getElementById('adminPassInput').value;
-    if (pass === "CyberHub@2026") {
-        document.getElementById('adminLoginOverlay').style.display = 'none';
-        document.getElementById('adminContent').style.display = 'block';
-        localStorage.setItem('cyberhub_admin', 'true');
-        if (typeof fetchAnnouncements !== 'undefined') fetchAnnouncements();
+    // 2. Toggle CURRENT item
+    element.classList.toggle('active');
+    const content = element.querySelector('.group-content');
+
+    if (element.classList.contains('active')) {
+        content.style.maxHeight = content.scrollHeight + "px";
     } else {
-        document.getElementById('loginError').innerText = "Incorrect Password!";
+        content.style.maxHeight = null;
     }
 };
 
-window.logoutAdmin = () => {
-    localStorage.removeItem('cyberhub_admin');
-    location.reload();
-};
 
-// 2. OneSignal Integration (v16)
-window.OneSignalDeferred = window.OneSignalDeferred || [];
-const ONESIGNAL_APP_ID = "7120fe27-c5b8-4b22-8c2f-64b18f99f83b";
-const ONESIGNAL_REST_API_KEY = "os_v2_app_oeqp4j6fxbecfdbpmsyy7gpyhniussvrcaiusenafhxutm2ipju2zedu2lrsjcfknjhi5hyft6uxlcyfbyzjploia5gvft4ir7ivyqi";
 
-if (ONESIGNAL_APP_ID) {
-    OneSignalDeferred.push(async function (OneSignal) {
-        await OneSignal.init({
-            appId: ONESIGNAL_APP_ID,
-            allowLocalhostAsSecureOrigin: true // Helpful for testing
-        });
-    });
-}
-
-// Helper for the custom button with state handling
-window.triggerPushPrompt = () => {
-    if (typeof OneSignalDeferred === 'undefined') return;
-
-    OneSignalDeferred.push(async function (OneSignal) {
-        try {
-            // If already subscribed, just update the UI
-            const isSubscribed = await OneSignal.User.PushSubscription.id;
-            if (isSubscribed) {
-                updatePushUI(true);
-                return;
-            }
-
-            // Prompt user
-            await OneSignal.Slidedown.promptPush();
-
-            // Listen for subscription change to update UI
-            OneSignal.Notifications.addEventListener("permissionChange", (permission) => {
-                if (permission === "granted") {
-                    updatePushUI(true);
-                }
-            });
-
-        } catch (e) {
-            console.error("OneSignal Prompt Error:", e);
-        }
-    });
-};
-
-function updatePushUI(active) {
-    const btn = document.querySelector('.pulse-btn');
-    const statusText = document.querySelector('.status-text');
-    if (btn && active) {
-        btn.innerHTML = '<i class="fas fa-check-circle"></i> Notifications Active';
-        btn.classList.remove('pulse-btn');
-        btn.classList.add('disabled-btn');
-        btn.onclick = null;
-        btn.style.background = "rgba(0, 255, 157, 0.2)";
-        btn.style.color = "#00ff9d";
-        btn.style.border = "1px solid #00ff9d";
-        if (statusText) statusText.innerHTML = '<i class="fas fa-check-circle" style="color: #00ff9d"></i> You are all set!';
-    }
-}
-
-// Initial check on load
-window.addEventListener('load', () => {
-    if (typeof OneSignalDeferred !== 'undefined') {
-        OneSignalDeferred.push(async function (OneSignal) {
-            const isSubscribed = await OneSignal.User.PushSubscription.id;
-            if (isSubscribed) updatePushUI(true);
-        });
-    }
-});
-
-window.postAnnouncement = async () => {
-    const title = document.getElementById('notifTitle').value;
-    const body = document.getElementById('notifBody').value;
-    const link = document.getElementById('notifLink').value;
-    const sendPush = true; // Always send push for now if you want them together
-
-    if (!title || !body) return alert("Title and Message are required!");
-
-    const btn = document.getElementById('postBtn');
-    btn.disabled = true;
-    const oldHTML = btn.innerHTML;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-
-    try {
-        // Save to Firebase if initialized
-        if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
-            const db = firebase.database();
-            const newRef = db.ref('announcements').push();
-            await newRef.set({
-                title, body, link,
-                timestamp: Date.now(),
-                category: "Announcement"
-            });
-        }
-
-        // Send Push via OneSignal
-        if (sendPush && !ONESIGNAL_REST_API_KEY.includes('YOUR_')) {
-            await fetch("https://onesignal.com/api/v1/notifications", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json; charset=utf-8",
-                    "Authorization": "Basic " + ONESIGNAL_REST_API_KEY
-                },
-                body: JSON.stringify({
-                    app_id: ONESIGNAL_APP_ID,
-                    included_segments: ["All"],
-                    headings: { "en": title },
-                    contents: { "en": body },
-                    url: link || window.location.origin
-                })
-            });
-        }
-
-        alert("Success! Announcement posted and notification sent.");
-        document.getElementById('notifTitle').value = "";
-        document.getElementById('notifBody').value = "";
-        document.getElementById('notifLink').value = "";
-    } catch (e) {
-        alert("Error: " + e.message);
-    } finally {
-        btn.disabled = false;
-        btn.innerHTML = oldHTML;
-    }
-};
-
-// Auto-login check for admin page
-window.addEventListener('load', () => {
-    if (window.is_admin_view) {
-        if (localStorage.getItem('cyberhub_admin') === 'true') {
-            const overlay = document.getElementById('adminLoginOverlay');
-            const content = document.getElementById('adminContent');
-            if (overlay) overlay.style.display = 'none';
-            if (content) content.style.display = 'block';
-            if (typeof fetchAnnouncements !== 'undefined') fetchAnnouncements();
-        }
-    }
-});

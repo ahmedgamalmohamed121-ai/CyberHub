@@ -3,21 +3,8 @@
         "title": "رياضيات 2",
         "chapters": [
             {
-                "name": "Chapter 1",
+                "name": "Book",
                 "file": "رياضيات 2/Math_2.pdf"
-            },
-            {
-                "name": "Chapter 2"
-            },
-            {
-                "name": "Chapter 3"
-            },
-            {
-                "name": "Chapter 4"
-            },
-            {
-                "name": "Chapter 5",
-                "file": null
             }
         ],
         "playlists": [
