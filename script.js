@@ -951,11 +951,21 @@ let SUBJECT_DATA = {
         ],
 
         playlists: [
-            { name: "Playlist 1 (رياضيات 2)", url: "https://youtube.com/playlist?list=PLsQO4gY4v8bmFCTEOzYcXP5itgwboSw4y&si=JtNIIBRvah_-q9zV" }
+            { name: "Playlist 1 (رياضيات 2)", url: "https://youtube.com/playlist?list=PLsQO4gY4v8bmFCTEOzYcXP5itgwboSw4y&si=JtNIIBRvah_-q9zV" },
+            { name: "Playlist 2 (رياضيات 2)", url: "https://youtube.com/playlist?list=PLxIvc-MGOs6iQXFnjF_STbhGdrZBphrv_&si=18nhjrSmemnbaKOG" }
         ],
         tasks: []
     },
-    prog2: { title: "برمجة 2", chapters: [{ name: "Chapter 1" }, { name: "Chapter 2" }, { name: "Chapter 3" }, { name: "Chapter 4" }, { name: "Chapter 5" }], playlists: [], tasks: [] },
+    prog2: {
+        title: "برمجة 2",
+        chapters: [
+            { name: "LECTURE 1 (د/ليلي)", file: "برمجة 2/Lecture1_IntroductionToOOP.pdf" }
+        ],
+        playlists: [
+            { name: "برمجة 2 - Playlist", url: "https://youtube.com/playlist?list=PLCZPUiJ5kQaE3HZvCTG_xEyPKQjyBGXcm&si=B9lA6geX51eRDF3n" }
+        ],
+        tasks: []
+    },
     discrete: {
         title: "تراكيب محددة",
         chapters: [
@@ -966,9 +976,10 @@ let SUBJECT_DATA = {
             { name: "Chapter 5" }
         ],
         playlists: [
-            { name: "Playlist 1 (Discrete Math)", url: "https://youtube.com/playlist?list=PLntliy4I5XRzm0hS26MvTknK1RlCnlIe7&si=jpNHIlbyLjclwO29" },
-            { name: "Playlist 2 (Discrete Math)", url: "https://youtube.com/playlist?list=PLZEjCjHzGS_YmzjrYeM-bBgmeYF5riV7i&si=zF7PWzOezCh6l2zT" },
-            { name: "Playlist 3 (Discrete Math)", url: "https://youtube.com/playlist?list=PLtqeb2-_b-2BkG8-inm5ho_W7fZTZHrVt&si=lKzlG66ETakEtBpp" }
+            { name: "Playlist 1 (Discrete Math)", url: "https://youtube.com/playlist?list=PLFOa5NvVCDcioQAS-RopCIitvUYO7aPu5&si=yggpTGdYa0Vc5RV_" },
+            { name: "Playlist 2 (Discrete Math)", url: "https://youtube.com/playlist?list=PLntliy4I5XRzm0hS26MvTknK1RlCnlIe7&si=jpNHIlbyLjclwO29" },
+            { name: "Playlist 3 (Discrete Math)", url: "https://youtube.com/playlist?list=PLZEjCjHzGS_YmzjrYeM-bBgmeYF5riV7i&si=zF7PWzOezCh6l2zT" },
+            { name: "Playlist 4 (Discrete Math)", url: "https://youtube.com/playlist?list=PLtqeb2-_b-2BkG8-inm5ho_W7fZTZHrVt&si=lKzlG66ETakEtBpp" }
         ],
         tasks: [
             {
@@ -981,23 +992,28 @@ let SUBJECT_DATA = {
     reports: {
         title: "كتابة التقارير",
         chapters: [
-            { name: "Chapter 1", file: "كتابة تقارير/Report Writing and Presentation skills 2025.pdf" },
-            { name: "Chapter 2" },
-            { name: "Chapter 3" },
-            { name: "Chapter 4" },
-            { name: "Chapter 5" }
+            { name: "Book", file: "كتابة تقارير/Report Writing and Presentation skills 2025.pdf" }
         ],
         playlists: [
             { name: "Playlist 1 (كتابة التقارير)", url: "https://www.youtube.com/watch?v=mdjyeHaWCgU&list=PLMzaNeHCFdm_kDzoxwO8t2wVcypqOhXCt" }
         ],
         tasks: []
     },
-    datacom: { title: "تراسل البيانات", chapters: [{ name: "Chapter 1" }, { name: "Chapter 2" }, { name: "Chapter 3" }, { name: "Chapter 4" }, { name: "Chapter 5" }], playlists: [], tasks: [] }
+    datacom: {
+        title: "تراسل البيانات",
+        chapters: [
+            { name: "Part 1", file: "تراسل بيانات/Transmission Basics_ 1 CYBER_ 2026 Lecture Notes.pdf" }
+        ],
+        playlists: [
+            { name: "تراسل البيانات - Playlist", url: "https://youtube.com/playlist?list=PLQX_sSyvDrILY5AGyc3ZwL03I-ppGkkI8&si=1Eb1cxPQM0_xS-39" }
+        ],
+        tasks: []
+    }
 };
 
 async function loadMaterials() {
     try {
-        const response = await fetch('data/materials.json?v=1.8');
+        const response = await fetch('data/materials.json?v=1.9');
         const data = await response.json();
         if (data && Object.keys(data).length > 0) {
             SUBJECT_DATA = data;

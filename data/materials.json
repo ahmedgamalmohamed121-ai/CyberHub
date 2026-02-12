@@ -11,6 +11,10 @@
             {
                 "name": "Playlist 1 (رياضيات 2)",
                 "url": "https://youtube.com/playlist?list=PLsQO4gY4v8bmFCTEOzYcXP5itgwboSw4y&si=JtNIIBRvah_-q9zV"
+            },
+            {
+                "name": "Playlist 2 (رياضيات 2)",
+                "url": "https://youtube.com/playlist?list=PLxIvc-MGOs6iQXFnjF_STbhGdrZBphrv_&si=18nhjrSmemnbaKOG"
             }
         ],
         "tasks": []
@@ -19,22 +23,16 @@
         "title": "برمجة 2",
         "chapters": [
             {
-                "name": "Chapter 1"
-            },
-            {
-                "name": "Chapter 2"
-            },
-            {
-                "name": "Chapter 3"
-            },
-            {
-                "name": "Chapter 4"
-            },
-            {
-                "name": "Chapter 5"
+                "name": "LECTURE 1 (د/ليلي)",
+                "file": "برمجة 2/Lecture1_IntroductionToOOP.pdf"
             }
         ],
-        "playlists": [],
+        "playlists": [
+            {
+                "name": "برمجة 2 - Playlist",
+                "url": "https://youtube.com/playlist?list=PLCZPUiJ5kQaE3HZvCTG_xEyPKQjyBGXcm&si=B9lA6geX51eRDF3n"
+            }
+        ],
         "tasks": []
     },
     "discrete": {
@@ -60,14 +58,18 @@
         "playlists": [
             {
                 "name": "Playlist 1 (Discrete Math)",
-                "url": "https://youtube.com/playlist?list=PLntliy4I5XRzm0hS26MvTknK1RlCnlIe7&si=jpNHIlbyLjclwO29"
+                "url": "https://youtube.com/playlist?list=PLFOa5NvVCDcioQAS-RopCIitvUYO7aPu5&si=yggpTGdYa0Vc5RV_"
             },
             {
                 "name": "Playlist 2 (Discrete Math)",
-                "url": "https://youtube.com/playlist?list=PLZEjCjHzGS_YmzjrYeM-bBgmeYF5riV7i&si=zF7PWzOezCh6l2zT"
+                "url": "https://youtube.com/playlist?list=PLntliy4I5XRzm0hS26MvTknK1RlCnlIe7&si=jpNHIlbyLjclwO29"
             },
             {
                 "name": "Playlist 3 (Discrete Math)",
+                "url": "https://youtube.com/playlist?list=PLZEjCjHzGS_YmzjrYeM-bBgmeYF5riV7i&si=zF7PWzOezCh6l2zT"
+            },
+            {
+                "name": "Playlist 4 (Discrete Math)",
                 "url": "https://youtube.com/playlist?list=PLtqeb2-_b-2BkG8-inm5ho_W7fZTZHrVt&si=lKzlG66ETakEtBpp"
             }
         ],
@@ -104,20 +106,8 @@
         "title": "كتابة التقارير",
         "chapters": [
             {
-                "name": "Chapter 1",
+                "name": "Book",
                 "file": "كتابة تقارير/Report Writing and Presentation skills 2025.pdf"
-            },
-            {
-                "name": "Chapter 2"
-            },
-            {
-                "name": "Chapter 3"
-            },
-            {
-                "name": "Chapter 4"
-            },
-            {
-                "name": "Chapter 5"
             }
         ],
         "playlists": [
@@ -132,22 +122,16 @@
         "title": "تراسل البيانات",
         "chapters": [
             {
-                "name": "Chapter 1"
-            },
-            {
-                "name": "Chapter 2"
-            },
-            {
-                "name": "Chapter 3"
-            },
-            {
-                "name": "Chapter 4"
-            },
-            {
-                "name": "Chapter 5"
+                "name": "Part 1",
+                "file": "تراسل بيانات/Transmission Basics_ 1 CYBER_ 2026 Lecture Notes.pdf"
             }
         ],
-        "playlists": [],
+        "playlists": [
+            {
+                "name": "تراسل البيانات - Playlist",
+                "url": "https://youtube.com/playlist?list=PLQX_sSyvDrILY5AGyc3ZwL03I-ppGkkI8&si=1Eb1cxPQM0_sS-39"
+            }
+        ],
         "tasks": []
     }
 }
