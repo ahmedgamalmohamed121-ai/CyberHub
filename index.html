@@ -22,7 +22,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- CSS -->
-    <link rel="stylesheet" href="style.css?v=1.9">
+    <link rel="stylesheet" href="style.css?v=2.0">
 
     <!-- Monaco Editor -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
@@ -126,7 +126,8 @@
                 <div class="hero-content">
                     <h1 class="glitch" data-text="CyberHub FCI.ZU">CyberHub FCI.ZU</h1>
                     <div class="hero-description-compact">
-                        <p>The Elite Integrated Platform for <span class="typing-text">FCI Zagazig University</span></p>
+                        <p>The Elite Integrated Platform for <span class="typing-text"
+                                style="background-clip: text;">FCI Zagazig University</span></p>
                         <p class="sub-desc">A specialized academic hub featuring <strong>Detailed Lectures</strong>,
                             <strong>Resource Files</strong>, <strong>Past Examinations</strong>, and <strong>Official
                                 Timetables</strong>
@@ -476,29 +477,74 @@
             <div class="groups-list-container">
                 <style>
                     .groups-list-container {
-                        max-width: 800px;
+                        max-width: 900px;
                         margin: 2rem auto;
                         display: flex;
                         flex-direction: column;
-                        gap: 1rem;
+                        gap: 1.2rem;
                         padding: 0 1rem;
                     }
 
                     .group-item {
-                        background: rgba(30, 41, 59, 0.6);
-                        border: 1px solid rgba(255, 255, 255, 0.1);
-                        border-radius: 12px;
+                        background: rgba(15, 23, 42, 0.4);
+                        border: 1px solid rgba(255, 255, 255, 0.08);
+                        border-radius: 16px;
                         overflow: hidden;
+                        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                        backdrop-filter: blur(10px);
+                        position: relative;
+                    }
+
+                    .group-item::before {
+                        content: '';
+                        position: absolute;
+                        left: 0;
+                        top: 0;
+                        height: 100%;
+                        width: 4px;
+                        background: transparent;
                         transition: all 0.3s ease;
                     }
 
+                    /* Doctor Item Accent */
+                    .group-item.doc-item::before {
+                        background: var(--primary-green);
+                        opacity: 0.5;
+                    }
+
+                    .group-item.doc-item.active {
+                        border-color: rgba(0, 255, 65, 0.3);
+                        box-shadow: 0 10px 30px rgba(0, 255, 65, 0.1);
+                    }
+
+                    .group-item.doc-item.active::before {
+                        opacity: 1;
+                        box-shadow: 0 0 15px var(--primary-green);
+                    }
+
+                    /* TA/Section Item Accent */
+                    .group-item.ta-item::before {
+                        background: var(--primary-cyan);
+                        opacity: 0.5;
+                    }
+
+                    .group-item.ta-item.active {
+                        border-color: rgba(0, 243, 255, 0.3);
+                        box-shadow: 0 10px 30px rgba(0, 243, 255, 0.1);
+                    }
+
+                    .group-item.ta-item.active::before {
+                        opacity: 1;
+                        box-shadow: 0 0 15px var(--primary-cyan);
+                    }
+
                     .group-header {
-                        padding: 1.2rem;
+                        padding: 1.5rem;
                         display: flex;
                         justify-content: space-between;
                         align-items: center;
                         cursor: pointer;
-                        background: rgba(255, 255, 255, 0.02);
+                        background: linear-gradient(90deg, rgba(255, 255, 255, 0.02), transparent);
                     }
 
                     .group-header:hover {
@@ -506,199 +552,487 @@
                     }
 
                     .group-title {
-                        font-size: 1.1rem;
+                        font-size: 1.15rem;
                         color: #fff;
                         display: flex;
                         align-items: center;
-                        gap: 10px;
-                        text-align: right;
+                        gap: 12px;
                         width: 100%;
                         justify-content: flex-start;
+                        font-weight: 600;
                     }
 
                     .group-title i {
+                        font-size: 1.2rem;
+                        opacity: 0.8;
+                    }
+
+                    .doc-item .group-title i {
                         color: var(--primary-green);
+                    }
+
+                    .ta-item .group-title i {
+                        color: var(--primary-cyan);
+                    }
+
+                    .group-badge {
+                        font-size: 0.75rem;
+                        padding: 2px 8px;
+                        border-radius: 6px;
+                        background: rgba(255, 255, 255, 0.1);
+                        color: var(--text-muted);
+                        margin-right: auto;
                         margin-left: 10px;
+                        border: 1px solid rgba(255, 255, 255, 0.05);
+                    }
+
+                    .doc-item.active .group-badge {
+                        background: rgba(0, 255, 65, 0.1);
+                        color: var(--primary-green);
+                        border-color: rgba(0, 255, 65, 0.2);
+                    }
+
+                    .ta-item.active .group-badge {
+                        background: rgba(0, 243, 255, 0.1);
+                        color: var(--primary-cyan);
+                        border-color: rgba(0, 243, 255, 0.2);
                     }
 
                     .group-toggle-icon {
                         color: var(--text-muted);
-                        transition: transform 0.3s ease;
+                        transition: all 0.3s ease;
+                        font-size: 0.9rem;
                     }
 
                     .group-item.active .group-toggle-icon {
                         transform: rotate(180deg);
+                    }
+
+                    .doc-item.active .group-toggle-icon {
                         color: var(--primary-green);
                     }
 
-                    .group-item.active {
-                        border-color: var(--primary-green);
-                        box-shadow: 0 0 15px rgba(0, 255, 65, 0.1);
+                    .ta-item.active .group-toggle-icon {
+                        color: var(--primary-cyan);
+                    }
+
+                    /* Light Mode Specific Overrides */
+                    .light-mode .group-item {
+                        background: #fff;
+                        border-color: #e2e8f0;
+                        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+                    }
+
+                    .light-mode .group-title {
+                        color: #1e293b;
+                    }
+
+                    .light-mode .group-header {
+                        background: linear-gradient(90deg, #f8fafc, transparent);
+                    }
+
+                    .light-mode .group-header:hover {
+                        background: #f1f5f9;
+                    }
+
+                    .light-mode .group-badge {
+                        background: #f1f5f9;
+                        color: #64748b;
+                        border-color: #e2e8f0;
+                    }
+
+                    .light-mode .group-content {
+                        background: #f8fafc;
+                    }
+
+                    .light-mode .doc-item.active {
+                        border-color: rgba(34, 197, 94, 0.3);
+                        box-shadow: 0 10px 30px rgba(34, 197, 94, 0.08);
+                    }
+
+                    .light-mode .ta-item.active {
+                        border-color: rgba(14, 165, 233, 0.3);
+                        box-shadow: 0 10px 30px rgba(14, 165, 233, 0.08);
+                    }
+
+                    /* Premium Section Header */
+                    .premium-header {
+                        position: relative;
+                        padding-bottom: 0.5rem;
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                    }
+
+                    .premium-header h2 {
+                        font-size: 1.8rem;
+                        font-weight: 800;
+                        margin-bottom: 0.2rem;
+                        letter-spacing: -0.5px;
+                        background: linear-gradient(135deg, var(--primary-cyan), #0ea5e9, var(--primary-blue));
+                        -webkit-background-clip: text;
+                        background-clip: text;
+                        -webkit-text-fill-color: transparent;
+                        position: relative;
+                        z-index: 1;
+                    }
+
+                    .premium-header .header-icon-wrapper {
+                        font-size: 1.2rem;
+                        margin-bottom: 0.5rem;
+                        color: var(--primary-cyan);
+                        background: rgba(0, 243, 255, 0.08);
+                        width: 42px;
+                        height: 42px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        border-radius: 12px;
+                        border: 1px solid rgba(0, 243, 255, 0.15);
+                        box-shadow: 0 4px 15px rgba(0, 243, 255, 0.05);
+                        animation: floatIcon 3s ease-in-out infinite;
+                    }
+
+                    @keyframes floatIcon {
+
+                        0%,
+                        100% {
+                            transform: translateY(0);
+                        }
+
+                        50% {
+                            transform: translateY(-6px);
+                        }
+                    }
+
+                    .premium-header .header-underline {
+                        width: 50px;
+                        height: 3px;
+                        background: linear-gradient(90deg, transparent, var(--primary-cyan), transparent);
+                        border-radius: 2px;
+                        margin: 0.5rem 0;
+                        position: relative;
+                    }
+
+                    .premium-header .header-underline::after {
+                        content: '';
+                        position: absolute;
+                        top: 50%;
+                        left: 50%;
+                        transform: translate(-50%, -50%);
+                        width: 8px;
+                        height: 8px;
+                        background: var(--primary-cyan);
+                        border-radius: 50%;
+                        box-shadow: 0 0 10px var(--primary-cyan);
+                    }
+
+                    .light-mode .premium-header h2 {
+                        background: linear-gradient(135deg, #0284c7, #0369a1);
+                        -webkit-background-clip: text;
+                        background-clip: text;
+                    }
+
+                    .light-mode .premium-header .header-icon-wrapper {
+                        background: #f0f9ff;
+                        border-color: #bae6fd;
+                        color: #0284c7;
                     }
 
                     .group-content {
                         max-height: 0;
                         overflow: hidden;
-                        transition: max-height 0.3s ease-out;
-                        background: rgba(0, 0, 0, 0.2);
+                        transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+                        background: rgba(0, 0, 0, 0.3);
                     }
 
                     .group-content-inner {
-                        padding: 1.5rem;
+                        padding: 2rem;
                         display: flex;
-                        justify-content: center;
+                        flex-direction: column;
+                        align-items: center;
+                        gap: 15px;
                     }
 
                     .btn-group-link {
-                        background: linear-gradient(135deg, var(--primary-green), #00cc33);
-                        color: #000;
-                        padding: 10px 20px;
-                        border-radius: 8px;
+                        width: 100%;
+                        max-width: 350px;
+                        padding: 12px 25px;
+                        border-radius: 12px;
                         text-decoration: none;
-                        font-weight: bold;
+                        font-weight: 700;
                         display: inline-flex;
                         align-items: center;
-                        gap: 8px;
-                        width: 100%;
+                        gap: 10px;
                         justify-content: center;
-                        max-width: 300px;
+                        transition: all 0.3s ease;
+                        font-size: 1rem;
+                        letter-spacing: 0.5px;
+                        border: 1px solid transparent;
                     }
 
-                    .btn-group-link:hover {
-                        transform: translateY(-2px);
-                        box-shadow: 0 5px 15px rgba(0, 255, 65, 0.3);
+                    /* WhatsApp Button Style */
+                    .btn-whatsapp {
+                        background: linear-gradient(135deg, #25D366, #128C7E);
+                        color: #fff;
+                        box-shadow: 0 4px 15px rgba(37, 211, 102, 0.2);
+                    }
+
+                    .btn-whatsapp:hover {
+                        transform: translateY(-3px);
+                        box-shadow: 0 8px 25px rgba(37, 211, 102, 0.4);
+                        filter: brightness(1.1);
+                    }
+
+                    /* Telegram Button Style */
+                    .btn-telegram {
+                        background: linear-gradient(135deg, #0088cc, #005588);
+                        color: #fff;
+                        box-shadow: 0 4px 15px rgba(0, 136, 204, 0.2);
+                    }
+
+                    .btn-telegram:hover {
+                        transform: translateY(-3px);
+                        box-shadow: 0 8px 25px rgba(0, 136, 204, 0.4);
+                        filter: brightness(1.1);
+                    }
+
+                    @media (max-width: 600px) {
+                        .group-header {
+                            padding: 1.2rem;
+                        }
+
+                        .group-title {
+                            font-size: 1rem;
+                            flex-wrap: wrap;
+                        }
+
+                        .group-badge {
+                            margin-right: 0;
+                            margin-top: 5px;
+                            width: fit-content;
+                        }
+                    }
+
+                    .ta-item:hover {
+                        border-color: rgba(0, 243, 255, 0.4);
+                        box-shadow: 0 0 20px rgba(0, 243, 255, 0.1);
+                    }
+
+                    .doc-item:hover {
+                        border-color: rgba(0, 255, 65, 0.4);
+                        box-shadow: 0 0 20px rgba(0, 255, 65, 0.1);
                     }
                 </style>
 
                 <!-- 1. Dr. Ahmed El-Refaie -->
-                <div class="group-item" onclick="toggleGroupItem(this)">
+                <div class="group-item doc-item" onclick="toggleGroupItem(this)">
                     <div class="group-header">
-                        <div class="group-title"><i class="fas fa-user-tie"></i> د/احمد الرفاعي برمجة 2 (A1,A2)</div>
+                        <div class="group-title"><i class="fas fa-user-tie"></i> د/احمد الرفاعي برمجة 2 <span
+                                class="group-badge">A1,A2</span></div>
                         <i class="fas fa-chevron-down group-toggle-icon"></i>
                     </div>
-                    <div class="group-content">
+                    <div class="group-content" onclick="event.stopPropagation()">
                         <div class="group-content-inner">
                             <a href="https://chat.whatsapp.com/KnYQd4wL3lW0Mmp7Ez2Rhk?mode=gi_t" target="_blank"
-                                class="btn-group-link"><i class="fab fa-whatsapp"></i> Join Group</a>
+                                class="btn-group-link btn-whatsapp"><i class="fab fa-whatsapp"></i> Join WhatsApp
+                                Group</a>
                         </div>
                     </div>
                 </div>
 
                 <!-- 2. Dr. Samah Ibrahim -->
-                <div class="group-item" onclick="toggleGroupItem(this)">
+                <div class="group-item doc-item" onclick="toggleGroupItem(this)">
                     <div class="group-header">
-                        <div class="group-title"><i class="fas fa-user-tie"></i> د/سماح ابراهيم رياضيات 2 (A1,A3)</div>
+                        <div class="group-title"><i class="fas fa-user-tie"></i> د/سماح ابراهيم رياضيات 2 <span
+                                class="group-badge">A1,A3</span></div>
                         <i class="fas fa-chevron-down group-toggle-icon"></i>
                     </div>
-                    <div class="group-content">
+                    <div class="group-content" onclick="event.stopPropagation()">
                         <div class="group-content-inner">
                             <a href="https://chat.whatsapp.com/C8btBN3f3W16pNakm1ccT9?mode=gi_t" target="_blank"
-                                class="btn-group-link"><i class="fab fa-whatsapp"></i> Join Group</a>
+                                class="btn-group-link btn-whatsapp"><i class="fab fa-whatsapp"></i> Join WhatsApp
+                                Group</a>
                         </div>
                     </div>
                 </div>
 
                 <!-- 3. Dr. Reda Mohamed (A1) -->
-                <div class="group-item" onclick="toggleGroupItem(this)">
+                <div class="group-item doc-item" onclick="toggleGroupItem(this)">
                     <div class="group-header">
-                        <div class="group-title"><i class="fas fa-user-tie"></i> د/رضا محمد تراكيب محددة (A1)</div>
+                        <div class="group-title"><i class="fas fa-user-tie"></i> د/رضا محمد تراكيب محددة <span
+                                class="group-badge">A1</span></div>
                         <i class="fas fa-chevron-down group-toggle-icon"></i>
                     </div>
-                    <div class="group-content">
+                    <div class="group-content" onclick="event.stopPropagation()">
                         <div class="group-content-inner">
                             <a href="https://chat.whatsapp.com/G2aXi6M1RrJ3ad52B0Cy2m?mode=gi_t" target="_blank"
-                                class="btn-group-link"><i class="fab fa-whatsapp"></i> Join Group</a>
+                                class="btn-group-link btn-whatsapp"><i class="fab fa-whatsapp"></i> Join WhatsApp
+                                Group</a>
                         </div>
                     </div>
                 </div>
 
                 <!-- 3.1 Dr. Reda Mohamed (A2,A3) -->
-                <div class="group-item" onclick="toggleGroupItem(this)">
+                <div class="group-item doc-item" onclick="toggleGroupItem(this)">
                     <div class="group-header">
-                        <div class="group-title"><i class="fas fa-user-tie"></i> د/رضا محمد تراكيب محددة (A2,A3)</div>
+                        <div class="group-title"><i class="fas fa-user-tie"></i> د/رضا محمد تراكيب محددة <span
+                                class="group-badge">A2,A3</span></div>
                         <i class="fas fa-chevron-down group-toggle-icon"></i>
                     </div>
-                    <div class="group-content">
+                    <div class="group-content" onclick="event.stopPropagation()">
                         <div class="group-content-inner">
                             <a href="https://chat.whatsapp.com/JnLmQkkc2nq37Qd5OzeH4a?mode=gi_t" target="_blank"
-                                class="btn-group-link"><i class="fab fa-whatsapp"></i> Join Group</a>
+                                class="btn-group-link btn-whatsapp"><i class="fab fa-whatsapp"></i> Join WhatsApp
+                                Group</a>
                         </div>
                     </div>
                 </div>
 
                 <!-- 4. Dr. Ehab Roshdy -->
-                <div class="group-item" onclick="toggleGroupItem(this)">
+                <div class="group-item doc-item" onclick="toggleGroupItem(this)">
                     <div class="group-header">
-                        <div class="group-title"><i class="fas fa-user-tie"></i> د/ايهاب رشدي تراسل البيانات (A1,A2,A3)
-                        </div>
+                        <div class="group-title"><i class="fas fa-user-tie"></i> د/ايهاب رشدي تراسل البيانات <span
+                                class="group-badge">A1,A2,A3</span></div>
                         <i class="fas fa-chevron-down group-toggle-icon"></i>
                     </div>
-                    <div class="group-content">
+                    <div class="group-content" onclick="event.stopPropagation()">
                         <div class="group-content-inner">
                             <a href="https://chat.whatsapp.com/DL9C1jO6FaS0DJ9D2IJf75?mode=gi_t" target="_blank"
-                                class="btn-group-link"><i class="fab fa-whatsapp"></i> Join Group</a>
+                                class="btn-group-link btn-whatsapp"><i class="fab fa-whatsapp"></i> Join WhatsApp
+                                Group</a>
                         </div>
                     </div>
                 </div>
 
                 <!-- 5. Dr. Al-Shaimaa El-Tantawy -->
-                <div class="group-item" onclick="toggleGroupItem(this)">
+                <div class="group-item doc-item" onclick="toggleGroupItem(this)">
                     <div class="group-header">
-                        <div class="group-title"><i class="fas fa-user-tie"></i> د/الشيماء الطنطاوي كتابة التقارير
-                            (A1,A2)</div>
+                        <div class="group-title"><i class="fas fa-user-tie"></i> د/الشيماء الطنطاوي كتابة التقارير <span
+                                class="group-badge">A1,A2</span></div>
                         <i class="fas fa-chevron-down group-toggle-icon"></i>
                     </div>
-                    <div class="group-content">
+                    <div class="group-content" onclick="event.stopPropagation()">
                         <div class="group-content-inner">
                             <a href="https://chat.whatsapp.com/BOgQKNxT9C5LQd6L6SPk1Y?mode=gi_t" target="_blank"
-                                class="btn-group-link"><i class="fab fa-whatsapp"></i> Join Group</a>
+                                class="btn-group-link btn-whatsapp"><i class="fab fa-whatsapp"></i> Join WhatsApp
+                                Group</a>
                         </div>
                     </div>
                 </div>
 
                 <!-- 6. Dr. Amal Farouk -->
-                <div class="group-item" onclick="toggleGroupItem(this)">
+                <div class="group-item doc-item" onclick="toggleGroupItem(this)">
                     <div class="group-header">
-                        <div class="group-title"><i class="fas fa-user-tie"></i> د/امل فاروق رياضيات2 (A2)</div>
+                        <div class="group-title"><i class="fas fa-user-tie"></i> د/امل فاروق رياضيات2 <span
+                                class="group-badge">A2</span></div>
                         <i class="fas fa-chevron-down group-toggle-icon"></i>
                     </div>
-                    <div class="group-content">
+                    <div class="group-content" onclick="event.stopPropagation()">
                         <div class="group-content-inner">
                             <a href="https://chat.whatsapp.com/GRq6ZgimbID3qc2v5cwqmf?mode=gi_t" target="_blank"
-                                class="btn-group-link"><i class="fab fa-whatsapp"></i> Join Group</a>
+                                class="btn-group-link btn-whatsapp"><i class="fab fa-whatsapp"></i> Join WhatsApp
+                                Group</a>
                         </div>
                     </div>
                 </div>
 
                 <!-- 7. Dr. Laila Abdel-Fattah -->
-                <div class="group-item" onclick="toggleGroupItem(this)">
+                <div class="group-item doc-item" onclick="toggleGroupItem(this)">
                     <div class="group-header">
-                        <div class="group-title"><i class="fas fa-user-tie"></i> د/ليلي عبدالفتاح برمجة 2 (A3)</div>
+                        <div class="group-title"><i class="fas fa-user-tie"></i> د/ليلي عبدالفتاح برمجة 2 <span
+                                class="group-badge">A3</span></div>
                         <i class="fas fa-chevron-down group-toggle-icon"></i>
                     </div>
-                    <div class="group-content">
+                    <div class="group-content" onclick="event.stopPropagation()">
                         <div class="group-content-inner">
                             <a href="https://chat.whatsapp.com/BoliTLvh2EBDCkSGUITU6q?mode=gi_t" target="_blank"
-                                class="btn-group-link"><i class="fab fa-whatsapp"></i> Join Group</a>
+                                class="btn-group-link btn-whatsapp"><i class="fab fa-whatsapp"></i> Join WhatsApp
+                                Group</a>
                         </div>
                     </div>
                 </div>
 
                 <!-- 8. Dr. May Abdel-Sattar -->
-                <div class="group-item" onclick="toggleGroupItem(this)">
+                <div class="group-item doc-item" onclick="toggleGroupItem(this)">
                     <div class="group-header">
                         <div class="group-title"><i class="fas fa-user-tie"></i> دكتور/ مي عبدالستار القضاية الاجتماية
-                            (A1)</div>
+                            <span class="group-badge">A1</span>
+                        </div>
                         <i class="fas fa-chevron-down group-toggle-icon"></i>
                     </div>
-                    <div class="group-content">
+                    <div class="group-content" onclick="event.stopPropagation()">
                         <div class="group-content-inner">
                             <a href="https://chat.whatsapp.com/F9JXUPXavdTCZE2chWLZqK?mode=gi_t" target="_blank"
-                                class="btn-group-link"><i class="fab fa-whatsapp"></i> Join Group</a>
+                                class="btn-group-link btn-whatsapp"><i class="fab fa-whatsapp"></i> Join WhatsApp
+                                Group</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 9. Dr. Shaimaa Saber (A2) -->
+                <div class="group-item doc-item" onclick="toggleGroupItem(this)">
+                    <div class="group-header">
+                        <div class="group-title"><i class="fas fa-user-tie"></i> د/شيماء صابر قضايا اجتماعية <span
+                                class="group-badge">A2</span></div>
+                        <i class="fas fa-chevron-down group-toggle-icon"></i>
+                    </div>
+                    <div class="group-content" onclick="event.stopPropagation()">
+                        <div class="group-content-inner">
+                            <a href="https://chat.whatsapp.com/Fp2RPfaaJ28E5Ui85bSq0M?mode=gi_t" target="_blank"
+                                class="btn-group-link btn-whatsapp"><i class="fab fa-whatsapp"></i> Join WhatsApp
+                                Group</a>
                         </div>
                     </div>
                 </div>
             </div>
+
+            <div class="section-header premium-header" style="margin-top: 2rem;">
+                <div class="header-icon-wrapper">
+                    <i class="fas fa-chalkboard-teacher"></i>
+                </div>
+                <h2>السكاشن والعملي</h2>
+                <div class="header-underline"></div>
+                <p>روابط جروبات الواتساب والتليجرام الخاصة بالمعيدين.</p>
+            </div>
+
+            <div class="groups-list-container" style="margin-bottom: 5rem;">
+                <!-- 1. Eng. Karim El-Sayed -->
+                <div class="group-item ta-item" onclick="toggleGroupItem(this)">
+                    <div class="group-header">
+                        <div class="group-title"><i class="fas fa-user-graduate"></i> م/كريم السيد تراكيب محددة <span
+                                class="group-badge">Section 5, 7, 8, 9, 10</span></div>
+                        <i class="fas fa-chevron-down group-toggle-icon"></i>
+                    </div>
+                    <div class="group-content" onclick="event.stopPropagation()">
+                        <div class="group-content-inner">
+                            <a href="https://chat.whatsapp.com/HgpbO5AhsgA4T2SbyYtUsq?mode=gi_t" target="_blank"
+                                class="btn-group-link btn-whatsapp"><i class="fab fa-whatsapp"></i> Join WhatsApp
+                                Group</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Eng. Karim Ahmed -->
+                <div class="group-item ta-item" onclick="toggleGroupItem(this)">
+                    <div class="group-header">
+                        <div class="group-title"><i class="fas fa-user-graduate"></i> م/كريم احمد ماث ٢ <span
+                                class="group-badge">Section 1, 2, 3, 4, 5</span></div>
+                        <i class="fas fa-chevron-down group-toggle-icon"></i>
+                    </div>
+                    <div class="group-content" onclick="event.stopPropagation()">
+                        <div class="group-content-inner">
+                            <a href="https://chat.whatsapp.com/BtVotGuBdvBKyUVF1F7nAN?mode=gi_t" target="_blank"
+                                class="btn-group-link btn-whatsapp"><i class="fab fa-whatsapp"></i> Join WhatsApp
+                                Group</a>
+                            <a href="https://t.me/+8lRxy8-3HmM4MjA0" target="_blank"
+                                class="btn-group-link btn-telegram"><i class="fab fa-telegram-plane"></i> Join Telegram
+                                Channel</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
 
 
     </main>
@@ -773,7 +1107,7 @@
 
 
 
-    <script src="script.js?v=1.9"></script>
+    <script src="script.js?v=2.0"></script>
 </body>
 
 </html>

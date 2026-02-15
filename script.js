@@ -947,7 +947,8 @@ let SUBJECT_DATA = {
     math2: {
         title: "رياضيات 2",
         chapters: [
-            { name: "Book", file: "رياضيات 2/Math_2.pdf" }
+            { name: "Book", file: "رياضيات 2/Math_2.pdf" },
+            { name: "ملخص رياضيات", file: "رياضيات 2/ملخص رياضيات/Math2 (sec1 to sec10).pdf" }
         ],
 
         playlists: [
@@ -988,7 +989,14 @@ let SUBJECT_DATA = {
             }
         ]
     },
-    social: { title: "قضايا اجتماعية", chapters: [{ name: "Chapter 1" }, { name: "Chapter 2" }, { name: "Chapter 3" }, { name: "Chapter 4" }, { name: "Chapter 5" }], playlists: [], tasks: [] },
+    social: {
+        title: "قضايا اجتماعية",
+        chapters: [
+            { name: "Part 1", file: "قضايا اجتماعية/Ethics_chapter1-Part1.pdf" }
+        ],
+        playlists: [],
+        tasks: []
+    },
     reports: {
         title: "كتابة التقارير",
         chapters: [
@@ -1013,7 +1021,7 @@ let SUBJECT_DATA = {
 
 async function loadMaterials() {
     try {
-        const response = await fetch('data/materials.json?v=1.9');
+        const response = await fetch('data/materials.json?v=2.0');
         const data = await response.json();
         if (data && Object.keys(data).length > 0) {
             SUBJECT_DATA = data;
