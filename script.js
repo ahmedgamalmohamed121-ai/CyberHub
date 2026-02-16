@@ -890,17 +890,26 @@ document.getElementById('closeSchedulePreview')?.addEventListener('click', () =>
 // --- STUDENT GRADES SYSTEM (Dynamic Database) ---
 let STUDENT_DATA_LIST = [
     {
-        id: "2021001", name: "Ahmed Gamal", gpa: "3.8", grades: [
-            { subject: "رياضيات 2", degree: "95", grade: "A+", points: "4.0" },
-            { subject: "برمجة 2", degree: "88", grade: "A", points: "3.7" },
-            { subject: "تراكيب محددة", degree: "92", grade: "A+", points: "4.0" }
+        "id": "20912025101169",
+        "name": "محمد ابراهيم محمد ابراهيم فرج",
+        "gpa": "2.9",
+        "totalSum": "490",
+        "percentage": "81.67%",
+        "hours": "17",
+        "grades": [
+            { "code": "CHU100", "subject": "اللغة الانجليزية", "hours": "2", "degree": "82", "grade": "جيد جداً", "points": "2.8" },
+            { "code": "CBS100", "subject": "الرياضيات I", "hours": "3", "degree": "85", "grade": "جيد جداً", "points": "3.0" },
+            { "code": "CBS103", "subject": "الاحصاء والاحتمالات", "hours": "3", "degree": "88", "grade": "ممتاز", "points": "3.4" },
+            { "code": "CBS102", "subject": "الكترونيات", "hours": "3", "degree": "81", "grade": "جيد جداً", "points": "2.8" },
+            { "code": "CCS100", "subject": "اساسيات علوم الحاسب", "hours": "3", "degree": "70", "grade": "جيد", "points": "2.4" },
+            { "code": "CCS101", "subject": "برمجة الحاسب I", "hours": "3", "degree": "84", "grade": "جيد جداً", "points": "3.0" }
         ]
     }
 ];
 
 async function fetchAllGrades() {
     try {
-        const response = await fetch('/api/grades');
+        const response = await fetch('data/grades.json');
         const data = await response.json();
         if (data && data.length > 0) STUDENT_DATA_LIST = data;
     } catch (err) { console.error("Could not fetch grades from server."); }
@@ -919,10 +928,15 @@ window.searchGrades = () => {
         document.getElementById('resStudentName').textContent = student.name;
         document.getElementById('resStudentID').textContent = `ID: ${student.id}`;
         document.getElementById('resGPA').textContent = student.gpa;
+        document.getElementById('resTotalSum').textContent = student.totalSum || "0.0";
+        document.getElementById('resPercentage').textContent = student.percentage || "0.0%";
+        document.getElementById('resHours').textContent = student.hours || "0";
 
         tableBody.innerHTML = student.grades.map(g => `
             <tr>
+                <td>${escapeHTML(g.code)}</td>
                 <td>${escapeHTML(g.subject)}</td>
+                <td>${escapeHTML(g.hours)}</td>
                 <td>${escapeHTML(g.degree)}</td>
                 <td class="grade-${escapeHTML(g.grade.charAt(0))}">${escapeHTML(g.grade)}</td>
                 <td>${escapeHTML(g.points)}</td>

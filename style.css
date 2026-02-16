@@ -3570,6 +3570,37 @@ footer {
     border: 1px solid rgba(0, 255, 65, 0.2);
 }
 
+.transcript-summary {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+    background: rgba(255, 255, 255, 0.03);
+    padding: 1.5rem;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.summary-item {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    text-align: center;
+}
+
+.summary-item .label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.summary-item .value {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #fff;
+}
+
 .grades-table-wrapper {
     overflow-x: auto;
 }
@@ -3600,20 +3631,38 @@ footer {
     border-bottom: none;
 }
 
-.grades-table .grade-a {
+.grades-table .grade-a,
+.grades-table .grade-م {
     color: var(--primary-green);
-    font-weight: 700;
+    text-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
+    font-weight: 800;
 }
 
-.grades-table .grade-b {
+.grades-table .grade-b,
+.grades-table .grade-ج {
     color: var(--primary-cyan);
-    font-weight: 700;
+    text-shadow: 0 0 10px rgba(0, 243, 255, 0.3);
+    font-weight: 800;
 }
 
-.grades-table .grade-f {
-    color: #ff5050;
-    font-weight: 700;
+.grades-table .grade-f,
+.grades-table .grade-ر {
+    color: #ff4757;
+    text-shadow: 0 0 10px rgba(255, 71, 87, 0.3);
+    font-weight: 800;
 }
+
+/* Specific color for 'Good' if different from 'Very Good' */
+.grades-table .grade-ج:contains('جيد جداً') {
+    color: var(--primary-cyan);
+}
+
+.grades-table .grade-ج:not(:contains('جيد جداً')) {
+    color: #00d2ff;
+}
+
+/* Note: :contains is not standard CSS, so I'll handle different colors via JS or specific classes if needed. 
+   But for now, Cyan for all 'ج' (Good/Very Good) is fine. */
 
 .placeholder-msg {
     text-align: center;
@@ -3633,6 +3682,15 @@ footer {
     background: #ffffff;
     border-color: #e2e8f0;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+}
+
+.light-mode .transcript-summary {
+    background: #f8fafc;
+    border-color: #e2e8f0;
+}
+
+.light-mode .summary-item .value {
+    color: #1e293b;
 }
 
 .light-mode .search-box-premium input {
