@@ -30,14 +30,26 @@
     <!-- Pyodide (Python in Browser) - High-performance local engine -->
     <script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
 
-    <!-- Theme Initialization - Fast check to prevent flash -->
+    <!-- Anti-Flash Protection -->
+    <style>
+        body {
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+    </style>
     <script>
         (function () {
             const theme = localStorage.getItem('theme');
             if (theme === 'light') {
                 document.documentElement.classList.add('light-mode');
-                document.body?.classList.add('light-mode');
             }
+            window.addEventListener('DOMContentLoaded', () => {
+                document.body.style.opacity = '1';
+            });
+            // Fallback
+            window.addEventListener('load', () => {
+                document.body.style.opacity = '1';
+            });
         })();
     </script>
 
