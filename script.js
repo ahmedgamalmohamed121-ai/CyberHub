@@ -909,7 +909,7 @@ let STUDENT_DATA_LIST = [
 
 async function fetchAllGrades() {
     try {
-        const response = await fetch('data/grades.json');
+        const response = await fetch('data/grades.json?v=' + Date.now());
         const data = await response.json();
         if (data && data.length > 0) STUDENT_DATA_LIST = data;
     } catch (err) { console.error("Could not fetch grades from server."); }
