@@ -4190,25 +4190,27 @@ footer {
 }
 
 .premium-empty h3 {
-    font-size: 1.8rem;
+    font-size: 2rem;
     color: #fff;
-    margin-bottom: 1rem;
+    margin-bottom: 1.2rem;
     font-family: 'Poppins', sans-serif;
+    font-weight: 700;
 }
 
 .coming-soon-badge {
     position: absolute;
-    top: 20px;
-    right: 20px;
-    background: rgba(0, 243, 255, 0.1);
+    top: 30px;
+    right: 30px;
+    background: rgba(0, 243, 255, 0.05);
     color: var(--primary-cyan);
-    padding: 5px 15px;
+    padding: 6px 18px;
     border-radius: 50px;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     font-weight: 700;
     border: 1px solid rgba(0, 243, 255, 0.2);
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 1.5px;
+    backdrop-filter: blur(5px);
 }
 
 .animate-pulse {
