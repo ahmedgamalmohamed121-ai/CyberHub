@@ -61,6 +61,8 @@
         <div class="blob blob-2"></div>
     </div>
 
+
+
     <!-- Navigation -->
     <nav class="navbar">
         <div class="logo">
@@ -74,6 +76,7 @@
             <li data-section="editor"><i class="fas fa-code"></i> <span>Code Editor</span></li>
             <li data-section="grades"><i class="fas fa-graduation-cap"></i> <span>Student Grades</span></li>
             <li data-section="groups"><i class="fas fa-users"></i> <span>Group Links</span></li>
+            <li data-section="summaries"><i class="fas fa-file-invoice"></i> <span>Summaries</span></li>
         </ul>
 
         <div class="nav-actions">
@@ -179,6 +182,12 @@
                         <i class="fas fa-users card-icon"></i>
                         <h3>Group Links</h3>
                         <p>Join official student groups and communities.</p>
+                    </div>
+                    <!-- Summaries Card -->
+                    <div class="card glass-card" onclick="showSection('summaries')">
+                        <i class="fas fa-file-invoice card-icon"></i>
+                        <h3>Summaries</h3>
+                        <p>Detailed chapter summaries and revision notes.</p>
                     </div>
 
                 </div>
@@ -490,6 +499,23 @@
                 <div id="gradesPlaceholder" class="placeholder-msg">
                     <i class="fas fa-poll-h"></i>
                     <p>Enter your ID to view your academic transcript.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- SUMMARIES SECTION -->
+        <section id="summaries" class="view hidden-view">
+            <button class="btn-back" onclick="showSection('home')"><i class="fas fa-arrow-left"></i> Back to
+                Home</button>
+            <div class="section-header">
+                <h2><i class="fas fa-file-invoice"></i> Summaries</h2>
+                <p>Access condensed revision notes and chapter summaries.</p>
+            </div>
+
+            <div class="summaries-grid">
+                <div class="empty-state">
+                    <i class="fas fa-folder-open"></i>
+                    <p>Coming Soon: Detailed summaries for all subjects are being prepared.</p>
                 </div>
             </div>
         </section>

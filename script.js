@@ -808,6 +808,8 @@ function showSection(id) {
 
 
 
+
+
 function toggleTheme() {
     const isLight = document.documentElement.classList.toggle('light-mode');
     document.body.classList.toggle('light-mode');
@@ -888,24 +890,7 @@ document.getElementById('closeSchedulePreview')?.addEventListener('click', () =>
 });
 
 // --- STUDENT GRADES SYSTEM (Dynamic Database) ---
-let STUDENT_DATA_LIST = [
-    {
-        "id": "20912025101169",
-        "name": "محمد ابراهيم محمد ابراهيم فرج",
-        "gpa": "2.9",
-        "totalSum": "490",
-        "percentage": "81.67%",
-        "hours": "17",
-        "grades": [
-            { "code": "CHU100", "subject": "اللغة الانجليزية", "hours": "2", "degree": "82", "grade": "جيد جداً", "points": "2.8" },
-            { "code": "CBS100", "subject": "الرياضيات I", "hours": "3", "degree": "85", "grade": "جيد جداً", "points": "3.0" },
-            { "code": "CBS103", "subject": "الاحصاء والاحتمالات", "hours": "3", "degree": "88", "grade": "ممتاز", "points": "3.4" },
-            { "code": "CBS102", "subject": "الكترونيات", "hours": "3", "degree": "81", "grade": "جيد جداً", "points": "2.8" },
-            { "code": "CCS100", "subject": "اساسيات علوم الحاسب", "hours": "3", "degree": "70", "grade": "جيد", "points": "2.4" },
-            { "code": "CCS101", "subject": "برمجة الحاسب I", "hours": "3", "degree": "84", "grade": "جيد جداً", "points": "3.0" }
-        ]
-    }
-];
+let STUDENT_DATA_LIST = [];
 
 async function fetchAllGrades() {
     try {
@@ -974,7 +959,8 @@ let SUBJECT_DATA = {
     prog2: {
         title: "برمجة 2",
         chapters: [
-            { name: "LECTURE 1 (د/ليلي)", file: "برمجة 2/Lecture1_IntroductionToOOP.pdf" }
+            { name: "LECTURE 1 (د/ليلي)", file: "برمجة 2/Lecture1_IntroductionToOOP.pdf" },
+            { name: "LECTURE 2 (د/ليلي)", file: "برمجة 2/Lecture2_Constructor.pdf" }
         ],
         playlists: [
             { name: "برمجة 2 - Playlist", url: "https://youtube.com/playlist?list=PLCZPUiJ5kQaE3HZvCTG_xEyPKQjyBGXcm&si=B9lA6geX51eRDF3n" }
