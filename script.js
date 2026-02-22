@@ -1223,5 +1223,17 @@ window.toggleGroupItem = (element) => {
     }
 };
 
+window.toggleSubjectGroup = (element) => {
+    // 1. Close any OTHER open subject groups
+    document.querySelectorAll('.subject-group-card.active').forEach(item => {
+        if (item !== element) {
+            item.classList.remove('active');
+        }
+    });
+
+    // 2. Toggle CURRENT group
+    element.classList.toggle('active');
+};
+
 
 
