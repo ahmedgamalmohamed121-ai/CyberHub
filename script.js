@@ -53,6 +53,11 @@ function escapeHTML(str) {
 require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs' } });
 
 window.addEventListener('load', () => {
+    // Disable automatic scroll restoration to prevent jumping to bottom on refresh
+    if ('scrollRestoration' in history) {
+        history.scrollRestoration = 'manual';
+    }
+
     // Theme sync - index.html already adds the class, so we just sync internal state
     const savedTheme = localStorage.getItem('theme') || 'dark';
     if (savedTheme === 'light') {
@@ -800,6 +805,9 @@ function showSection(id) {
     document.querySelectorAll('.nav-links li').forEach(li => li.classList.toggle('active', li.dataset.section === id));
     localStorage.setItem('activeSection', id);
 
+    // Scroll to top when switching sections
+    window.scrollTo({ top: 0, behavior: 'instant' });
+
     // Refresh editor layout when shown
     if (id === 'editor' && editor) {
         setTimeout(() => editor.layout(), 50);
@@ -1123,6 +1131,10 @@ window.openSubject = (id) => {
     }
 
     document.getElementById('subjectModal').style.display = 'flex';
+
+    // Reset modal scroll to top
+    const modalContent = document.querySelector('#subjectModal .modal-content');
+    if (modalContent) modalContent.scrollTop = 0;
 };
 
 window.toggleSubChapter = (index) => {
