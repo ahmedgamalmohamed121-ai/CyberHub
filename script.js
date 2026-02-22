@@ -971,10 +971,7 @@ let SUBJECT_DATA = {
         title: "تراكيب محددة",
         chapters: [
             { name: "Chapter 1", file: "تراكيب محددة/Chapter 1 Set theory.pdf" },
-            { name: "Chapter 2" },
-            { name: "Chapter 3" },
-            { name: "Chapter 4" },
-            { name: "Chapter 5" }
+            { name: "Chapter 2" }
         ],
         playlists: [
             { name: "Playlist 1 (Discrete Math)", url: "https://youtube.com/playlist?list=PLFOa5NvVCDcioQAS-RopCIitvUYO7aPu5&si=yggpTGdYa0Vc5RV_" },
@@ -1027,7 +1024,7 @@ let SUBJECT_DATA = {
 
 async function loadMaterials() {
     try {
-        const response = await fetch('data/materials.json?v=2.2');
+        const response = await fetch('data/materials.json?v=2.3');
         const data = await response.json();
         if (data && Object.keys(data).length > 0) {
             SUBJECT_DATA = data;
