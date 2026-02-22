@@ -992,8 +992,13 @@ let SUBJECT_DATA = {
     social: {
         title: "قضايا اجتماعية",
         chapters: [
-            { name: "Part 1", file: "قضايا اجتماعية/Ethics_chapter1-Part1.pdf" },
-            { name: "Part 2", file: "قضايا اجتماعية/Chapter1-Part2.pdf" }
+            {
+                "name": "Chapter 1",
+                "subChapters": [
+                    { "name": "Part 1", "file": "قضايا اجتماعية/Ethics_chapter1-Part1.pdf" },
+                    { "name": "Part 2", "file": "قضايا اجتماعية/Chapter1-Part2.pdf" }
+                ]
+            }
         ],
         playlists: [],
         tasks: []
@@ -1022,7 +1027,7 @@ let SUBJECT_DATA = {
 
 async function loadMaterials() {
     try {
-        const response = await fetch('data/materials.json?v=2.1');
+        const response = await fetch('data/materials.json?v=2.2');
         const data = await response.json();
         if (data && Object.keys(data).length > 0) {
             SUBJECT_DATA = data;
@@ -1056,12 +1061,32 @@ window.openSubject = (id) => {
     // Inject Chapters 1-5
     const chaptersList = document.getElementById('chaptersList');
     if (chaptersList) {
-        chaptersList.innerHTML = data.chapters.map(ch => `
-            <li class="resource-item">
-                <span><i class="fas fa-folder-open"></i> ${escapeHTML(ch.name)}</span>
-                <button class="btn-xs download" onclick="${ch.file ? `window.open('${escapeHTML(ch.file)}', '_blank')` : "alert('📚 لم يتم رفع هذا الفصل حتى الآن\\n\\nسيتم رفع الملف قريباً إن شاء الله')"}">Open</button>
-            </li>
-        `).join('');
+        chaptersList.innerHTML = data.chapters.map((ch, chIndex) => {
+            if (ch.subChapters) {
+                return `
+                    <li class="nested-chapter">
+                        <div class="resource-item" onclick="toggleSubChapter(${chIndex})" style="cursor: pointer;">
+                            <span><i class="fas fa-folder-open"></i> ${escapeHTML(ch.name)}</span>
+                            <i id="subChapterChevron-${chIndex}" class="fas fa-chevron-down sub-chapter-chevron" style="transition: transform 0.3s; opacity: 0.6;"></i>
+                        </div>
+                        <div id="subChapterContent-${chIndex}" class="sub-chapters-container" style="display: none; padding: 5px 0 5px 20px; border-left: 2px dashed rgba(0, 243, 255, 0.2); margin: 5px 0 15px 15px;">
+                            ${ch.subChapters.map(sub => `
+                                <div class="resource-item sub-resource" style="margin-bottom: 8px; background: rgba(255, 255, 255, 0.01); width: 100%;">
+                                    <span><i class="fas fa-file-pdf"></i> ${escapeHTML(sub.name)}</span>
+                                    <button class="btn-xs download" onclick="window.open('${escapeHTML(sub.file)}', '_blank')">Open</button>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </li>
+                `;
+            }
+            return `
+                <li class="resource-item">
+                    <span><i class="fas fa-folder-open"></i> ${escapeHTML(ch.name)}</span>
+                    <button class="btn-xs download" onclick="${ch.file ? `window.open('${escapeHTML(ch.file)}', '_blank')` : "alert('📚 لم يتم رفع هذا الفصل حتى الآن\\n\\nسيتم رفع الملف قريباً إن شاء الله')"}">Open</button>
+                </li>
+            `;
+        }).join('');
     }
 
 
@@ -1101,6 +1126,19 @@ window.openSubject = (id) => {
     }
 
     document.getElementById('subjectModal').style.display = 'flex';
+};
+
+window.toggleSubChapter = (index) => {
+    const content = document.getElementById(`subChapterContent-${index}`);
+    const chevron = document.getElementById(`subChapterChevron-${index}`);
+    if (content.style.display === 'none') {
+        content.style.display = 'block';
+        content.style.animation = 'slideDown 0.3s ease-out';
+        chevron.style.transform = 'rotate(180deg)';
+    } else {
+        content.style.display = 'none';
+        chevron.style.transform = 'rotate(0deg)';
+    }
 };
 
 window.toggleTask = (index) => {
