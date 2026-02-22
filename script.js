@@ -992,7 +992,8 @@ let SUBJECT_DATA = {
     social: {
         title: "قضايا اجتماعية",
         chapters: [
-            { name: "Part 1", file: "قضايا اجتماعية/Ethics_chapter1-Part1.pdf" }
+            { name: "Part 1", file: "قضايا اجتماعية/Ethics_chapter1-Part1.pdf" },
+            { name: "Part 2", file: "قضايا اجتماعية/Chapter1-Part2.pdf" }
         ],
         playlists: [],
         tasks: []
@@ -1021,7 +1022,7 @@ let SUBJECT_DATA = {
 
 async function loadMaterials() {
     try {
-        const response = await fetch('data/materials.json?v=2.0');
+        const response = await fetch('data/materials.json?v=2.1');
         const data = await response.json();
         if (data && Object.keys(data).length > 0) {
             SUBJECT_DATA = data;
