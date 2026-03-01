@@ -968,7 +968,8 @@ let SUBJECT_DATA = {
         title: "برمجة 2",
         chapters: [
             { name: "LECTURE 1 (د/ليلي)", file: "برمجة 2/Lecture1_IntroductionToOOP.pdf" },
-            { name: "LECTURE 2 (د/ليلي)", file: "برمجة 2/Lecture2_Constructor.pdf" }
+            { name: "LECTURE 2 (د/ليلي)", file: "برمجة 2/Lecture2_Constructor.pdf" },
+            { name: "LECTURE 3 (د/ليلي)", file: "برمجة 2/Lecture3_Setter_Getter.pdf" }
         ],
         playlists: [
             { name: "برمجة 2 - Playlist", url: "https://youtube.com/playlist?list=PLCZPUiJ5kQaE3HZvCTG_xEyPKQjyBGXcm&si=B9lA6geX51eRDF3n" }
@@ -979,7 +980,7 @@ let SUBJECT_DATA = {
         title: "تراكيب محددة",
         chapters: [
             { name: "Chapter 1", file: "تراكيب محددة/Chapter 1 Set theory.pdf" },
-            { name: "Chapter 2" }
+            { name: "Chapter 2", file: "تراكيب محددة/Chapter 2 Relations.pdf" }
         ],
         playlists: [
             { name: "Playlist 1 (Discrete Math)", url: "https://youtube.com/playlist?list=PLFOa5NvVCDcioQAS-RopCIitvUYO7aPu5&si=yggpTGdYa0Vc5RV_" },
@@ -1001,7 +1002,8 @@ let SUBJECT_DATA = {
                 "name": "Chapter 1",
                 "subChapters": [
                     { "name": "Part 1", "file": "قضايا اجتماعية/Ethics_chapter1-Part1.pdf" },
-                    { "name": "Part 2", "file": "قضايا اجتماعية/Chapter1-Part2.pdf" }
+                    { "name": "Part 2", "file": "قضايا اجتماعية/Chapter1-Part2.pdf" },
+                    { "name": "اسئلة الفصل الاول", "file": "قضايا اجتماعية/Chapter1 Questions.pdf" }
                 ]
             }
         ],
@@ -1032,7 +1034,7 @@ let SUBJECT_DATA = {
 
 async function loadMaterials() {
     try {
-        const response = await fetch('data/materials.json?v=2.3');
+        const response = await fetch('data/materials.json?v=2.4');
         const data = await response.json();
         if (data && Object.keys(data).length > 0) {
             SUBJECT_DATA = data;

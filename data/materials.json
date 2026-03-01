@@ -33,6 +33,10 @@
             {
                 "name": "LECTURE 2 (د/ليلي)",
                 "file": "برمجة 2/Lecture2_Constructor.pdf"
+            },
+            {
+                "name": "LECTURE 3 (د/ليلي)",
+                "file": "برمجة 2/Lecture3_Setter_Getter.pdf"
             }
         ],
         "playlists": [
@@ -51,7 +55,8 @@
                 "file": "تراكيب محددة/Chapter 1 Set theory.pdf"
             },
             {
-                "name": "Chapter 2"
+                "name": "Chapter 2",
+                "file": "تراكيب محددة/Chapter 2 Relations.pdf"
             }
         ],
         "playlists": [
@@ -92,6 +97,10 @@
                     {
                         "name": "Part 2",
                         "file": "قضايا اجتماعية/Chapter1-Part2.pdf"
+                    },
+                    {
+                        "name": "اسئلة الفصل الاول",
+                        "file": "قضايا اجتماعية/Chapter1 Questions.pdf"
                     }
                 ]
             }
