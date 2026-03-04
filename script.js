@@ -972,7 +972,8 @@ let SUBJECT_DATA = {
             { name: "LECTURE 3 (د/ليلي)", file: "برمجة 2/Lecture3_Setter_Getter.pdf" }
         ],
         playlists: [
-            { name: "برمجة 2 - Playlist", url: "https://youtube.com/playlist?list=PLCZPUiJ5kQaE3HZvCTG_xEyPKQjyBGXcm&si=B9lA6geX51eRDF3n" }
+            { name: "برمجة 2 - Playlist", url: "https://youtube.com/playlist?list=PLCZPUiJ5kQaE3HZvCTG_xEyPKQjyBGXcm&si=B9lA6geX51eRDF3n" },
+            { name: "كورس OOP كامل بالملفات و ال Labs دكتور احمد الرفاعي", url: "https://github.com/ahmedelrefaiy/OOP-using-C-Plus-Plus/blob/main/readme.md" }
         ],
         tasks: []
     },
@@ -1023,6 +1024,25 @@ let SUBJECT_DATA = {
     datacom: {
         title: "تراسل البيانات",
         chapters: [
+            {
+                "name": "محتوى العملي - م. أحمد عوض",
+                "subChapters": [
+                    { "name": "1- Download Packet Tracer", "file": "https://drive.google.com/file/d/1qaETIr-7H19YFC63s75Zj9l0HdQOsCXT/view?usp=sharing" },
+                    { "name": "2- Install Packet Tracer", "file": "https://www.youtube.com/watch?v=YaeBPw3SPmE" },
+                    { "name": "3- Download Wireshark", "file": "https://drive.google.com/file/d/11CE37O-DRQg8eqpSkSl2tpegmlkJzork/view?usp=sharing" },
+                    { "name": "4- Packet Tracer Intro & LAN", "file": "https://drive.google.com/file/d/1SUSA1kqr5wYnvGUXMmFnJ8uwO_g1iE_C/view?usp=sharing" },
+                    { "name": "5- Cisco Switch Config Part 1", "file": "https://drive.google.com/file/d/1Ppoi8BDzeuidB32HCOuBx9lZeGa-Ol3t/view?usp=sharing" },
+                    { "name": "6- Cisco Switch Config part 2", "file": "https://drive.google.com/file/d/1EOz-bWfup79WGSSXUIxQZOe9A0zTLHEc/view?usp=sharing" },
+                    { "name": "7- Real application & Wireshark", "file": "https://drive.google.com/file/d/1Wf3_Zsy-sFlzdo_1G_gwFUg6atMeTkII/view?usp=sharing" },
+                    { "name": "8- PT Review & Simulation Mode", "file": "https://drive.google.com/file/d/17O5aThR1egosgP9m0OVCKkOqCirmfxSF/view?usp=sharing" },
+                    { "name": "9- WAN Simulation On PT", "file": "https://drive.google.com/file/d/1UOaX2RTdrw2UHjd-YTDod3YC121RSAjH/view?usp=sharing" },
+                    { "name": "10- IPV4 Addressing", "file": "https://drive.google.com/file/d/1u-HX6jhgvDV63uueNebJmYHedzxHLyIm/view?usp=sharing" },
+                    { "name": "11- IPV6 Addressing", "file": "https://drive.google.com/file/d/1IBM2C7yNdk-bHToefepuTEnzrRHFGHbD/view?usp=sharing" },
+                    { "name": "12- Basic DNS Config on PT", "file": "https://drive.google.com/file/d/1PcdFKjM5F3AsmYJmIhhMi8GZ08LoaSA7/view?usp=sharing" },
+                    { "name": "13- Basic DHCP Config on PT", "file": "https://drive.google.com/file/d/16rHnCU1r9rdtQ7mQjuHp9S-Zmmni_FT9/view?usp=sharing" }
+                ]
+            },
+            { name: "ملخص تراسل بيانات", file: "تراسل بيانات/ملخص تراسل بيانات/Network_Communication_Essentials.pdf" },
             { name: "Part 1", file: "تراسل بيانات/Transmission Basics_ 1 CYBER_ 2026 Lecture Notes.pdf" }
         ],
         playlists: [
@@ -1053,13 +1073,20 @@ window.openSubject = (id) => {
     const playlistList = document.getElementById('playlistList');
     if (playlistList) {
         if (data.playlists && data.playlists.length > 0) {
-            playlistList.innerHTML = data.playlists.map((pl, index) => `
-                <li class="resource-item">
-                    <span><i class="fab fa-youtube"></i> ${escapeHTML(pl.name)}</span>
-                    <button class="btn-xs watch" onclick="window.open('${escapeHTML(pl.url)}', '_blank')">Watch</button>
+            playlistList.innerHTML = data.playlists.map((pl, index) => {
+                const isGithub = pl.url.includes('github.com');
+                const isYoutube = pl.url.includes('youtube.com') || pl.url.includes('youtu.be');
+                const iconClass = isYoutube ? 'fab fa-youtube' : (isGithub ? 'fab fa-github' : 'fas fa-external-link-alt');
+                const btnLabel = isYoutube ? 'Watch' : 'Open';
+                const isLong = pl.name.length > 30;
+
+                return `
+                <li class="resource-item ${isLong ? 'long-text' : ''}" onclick="window.open('${escapeHTML(pl.url)}', '_blank')" style="cursor: pointer;">
+                    <span><i class="${iconClass}"></i> ${escapeHTML(pl.name)}</span>
+                    <button class="btn-xs watch">${btnLabel}</button>
                 </li>
                 ${index < data.playlists.length - 1 ? '<div class="playlist-separator">OR</div>' : ''}
-            `).join('');
+            `}).join('');
         } else {
             playlistList.innerHTML = `<li class="resource-item" style="opacity: 0.5; justify-content: center;"><span>No items in playlist yet</span></li>`;
         }
@@ -1076,13 +1103,17 @@ window.openSubject = (id) => {
                             <span><i class="fas fa-folder-open"></i> ${escapeHTML(ch.name)}</span>
                             <i id="subChapterChevron-${chIndex}" class="fas fa-chevron-down sub-chapter-chevron" style="transition: transform 0.3s; opacity: 0.6;"></i>
                         </div>
-                        <div id="subChapterContent-${chIndex}" class="sub-chapters-container" style="display: none; padding: 5px 0 5px 20px; border-left: 2px dashed rgba(0, 243, 255, 0.2); margin: 5px 0 15px 15px;">
-                            ${ch.subChapters.map(sub => `
-                                <div class="resource-item sub-resource" style="margin-bottom: 8px; background: rgba(255, 255, 255, 0.01); width: 100%;">
-                                    <span><i class="fas fa-file-pdf"></i> ${escapeHTML(sub.name)}</span>
+                        <div id="subChapterContent-${chIndex}" class="sub-chapters-container">
+                            ${ch.subChapters.map(sub => {
+                    const isDrive = sub.file.includes('drive.google.com');
+                    const isYoutube = sub.file.includes('youtube.com') || sub.file.includes('youtu.be');
+                    const subIconClass = isYoutube ? 'fab fa-youtube' : (isDrive ? 'fab fa-google-drive' : 'fas fa-file-pdf');
+                    return `
+                                <div class="resource-item sub-resource">
+                                    <span><i class="${subIconClass}"></i> ${escapeHTML(sub.name)}</span>
                                     <button class="btn-xs download" onclick="window.open('${escapeHTML(sub.file)}', '_blank')">Open</button>
                                 </div>
-                            `).join('')}
+                            `}).join('')}
                         </div>
                     </li>
                 `;
@@ -1142,12 +1173,10 @@ window.openSubject = (id) => {
 window.toggleSubChapter = (index) => {
     const content = document.getElementById(`subChapterContent-${index}`);
     const chevron = document.getElementById(`subChapterChevron-${index}`);
-    if (content.style.display === 'none') {
-        content.style.display = 'block';
-        content.style.animation = 'slideDown 0.3s ease-out';
+    content.classList.toggle('active');
+    if (content.classList.contains('active')) {
         chevron.style.transform = 'rotate(180deg)';
     } else {
-        content.style.display = 'none';
         chevron.style.transform = 'rotate(0deg)';
     }
 };
