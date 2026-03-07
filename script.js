@@ -106,11 +106,19 @@ window.addEventListener('load', () => {
     });
     setupEventListeners();
 
-    // Fail-safe: Periodically kill any remaining accessibility widgets (especially for mobile)
-    setInterval(() => {
-        const icons = document.querySelectorAll('.accessibility-widget, [aria-label*="Accessibility"], [title*="Keyboard"]');
-        icons.forEach(icon => icon.remove());
-    }, 1000);
+    // PERFORMANCE OPTIMIZATION: Use MutationObserver instead of a wasteful 1s interval
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            mutation.addedNodes.forEach((node) => {
+                if (node.nodeType === 1) { // Element node
+                    if (node.matches('.accessibility-widget, [aria-label*="Accessibility"], [title*="Keyboard"]')) {
+                        node.remove();
+                    }
+                }
+            });
+        });
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
 });
 
 function setupEventListeners() {
@@ -333,16 +341,16 @@ function runAdvancedSimulation(code, lang) {
     }
 }
 
-// Harden safeEvalMath to prevent arbitrary JS execution
+// SECURITY HARDENING: Use a stricter math sanitizer for fallback simulation
 function safeEvalMath(expr) {
     try {
         if (!expr) return "";
-        // Only allow math-related characters, numbers, and basic operators
         const sanitized = String(expr).replace(/[fLd]$/i, '').replace(/f/g, '').trim();
-        if (/[^0-9.+\-*/% ()\s&|^<>!]/.test(sanitized)) {
-            // If it contains non-math chars, return as literal string to avoid Function() abuse
+        // Disallow potential JS call patterns or property access (XSS defense)
+        if (/[^0-9.+\-*/% ()\s&|^<>!]/.test(sanitized) || sanitized.includes('.') && !/[0-9]/.test(sanitized[sanitized.indexOf('.') + 1])) {
             return sanitized;
         }
+        // Strict context for Function execution
         return Function(`"use strict"; return (${sanitized})`)();
     } catch (e) {
         return expr;
@@ -904,10 +912,57 @@ async function fetchAllGrades() {
     try {
         const response = await fetch('data/grades.json?v=' + Date.now());
         const data = await response.json();
-        if (data && data.length > 0) STUDENT_DATA_LIST = data;
+        if (data && data.length > 0) {
+            STUDENT_DATA_LIST = data;
+            initSearchSuggestions();
+        }
     } catch (err) { console.error("Could not fetch grades from server."); }
 }
 fetchAllGrades();
+
+function initSearchSuggestions() {
+    const searchInput = document.getElementById('studentSearch');
+    const suggestionsContainer = document.getElementById('searchSuggestions');
+    if (!searchInput || !suggestionsContainer) return;
+
+    searchInput.addEventListener('input', (e) => {
+        const value = e.target.value.trim().toLowerCase();
+        if (value.length < 2) {
+            suggestionsContainer.style.display = 'none';
+            return;
+        }
+
+        const matches = STUDENT_DATA_LIST.filter(s =>
+            s.id.toLowerCase().includes(value) ||
+            s.name.toLowerCase().includes(value)
+        ).slice(0, 5);
+
+        if (matches.length > 0) {
+            suggestionsContainer.innerHTML = matches.map(s => `
+                <div class="suggestion-item" onclick="selectSuggestion('${escapeHTML(s.id)}')">
+                    <span class="sug-name">${escapeHTML(s.name)}</span>
+                    <span class="sug-id">${escapeHTML(s.id)}</span>
+                </div>
+            `).join('');
+            suggestionsContainer.style.display = 'block';
+        } else {
+            suggestionsContainer.style.display = 'none';
+        }
+    });
+
+    // Close suggestions on outside click
+    document.addEventListener('click', (e) => {
+        if (!searchInput.contains(e.target) && !suggestionsContainer.contains(e.target)) {
+            suggestionsContainer.style.display = 'none';
+        }
+    });
+}
+
+window.selectSuggestion = (id) => {
+    document.getElementById('studentSearch').value = id;
+    document.getElementById('searchSuggestions').style.display = 'none';
+    window.searchGrades();
+};
 
 window.searchGrades = () => {
     const query = document.getElementById('studentSearch').value.trim();
@@ -950,116 +1005,23 @@ window.toggleMobileMenu = () => {
 };
 
 // --- SUBJECT MATERIALS SYSTEM ---
-let SUBJECT_DATA = {
-    math2: {
-        title: "رياضيات 2",
-        chapters: [
-            { name: "Book", file: "رياضيات 2/Math_2.pdf" },
-            { name: "ملخص رياضيات", file: "رياضيات 2/ملخص رياضيات/Math2 (sec1 to sec10).pdf" }
-        ],
-
-        playlists: [
-            { name: "Playlist 1 (رياضيات 2)", url: "https://youtube.com/playlist?list=PLsQO4gY4v8bmFCTEOzYcXP5itgwboSw4y&si=JtNIIBRvah_-q9zV" },
-            { name: "Playlist 2 (رياضيات 2)", url: "https://youtube.com/playlist?list=PLxIvc-MGOs6iQXFnjF_STbhGdrZBphrv_&si=18nhjrSmemnbaKOG" }
-        ],
-        tasks: []
-    },
-    prog2: {
-        title: "برمجة 2",
-        chapters: [
-            { name: "LECTURE 1 (د/ليلي)", file: "برمجة 2/Lecture1_IntroductionToOOP.pdf" },
-            { name: "LECTURE 2 (د/ليلي)", file: "برمجة 2/Lecture2_Constructor.pdf" },
-            { name: "LECTURE 3 (د/ليلي)", file: "برمجة 2/Lecture3_Setter_Getter.pdf" }
-        ],
-        playlists: [
-            { name: "برمجة 2 - Playlist", url: "https://youtube.com/playlist?list=PLCZPUiJ5kQaE3HZvCTG_xEyPKQjyBGXcm&si=B9lA6geX51eRDF3n" },
-            { name: "كورس OOP كامل بالملفات و ال Labs دكتور احمد الرفاعي", url: "https://github.com/ahmedelrefaiy/OOP-using-C-Plus-Plus/blob/main/readme.md" }
-        ],
-        tasks: []
-    },
-    discrete: {
-        title: "تراكيب محددة",
-        chapters: [
-            { name: "Chapter 1", file: "تراكيب محددة/Chapter 1 Set theory.pdf" },
-            { name: "Chapter 2", file: "تراكيب محددة/Chapter 2 Relations.pdf" }
-        ],
-        playlists: [
-            { name: "Playlist 1 (Discrete Math)", url: "https://youtube.com/playlist?list=PLFOa5NvVCDcioQAS-RopCIitvUYO7aPu5&si=yggpTGdYa0Vc5RV_" },
-            { name: "Playlist 2 (Discrete Math)", url: "https://youtube.com/playlist?list=PLntliy4I5XRzm0hS26MvTknK1RlCnlIe7&si=jpNHIlbyLjclwO29" },
-            { name: "Playlist 3 (Discrete Math)", url: "https://youtube.com/playlist?list=PLZEjCjHzGS_YmzjrYeM-bBgmeYF5riV7i&si=zF7PWzOezCh6l2zT" },
-            { name: "Playlist 4 (Discrete Math)", url: "https://youtube.com/playlist?list=PLtqeb2-_b-2BkG8-inm5ho_W7fZTZHrVt&si=lKzlG66ETakEtBpp" }
-        ],
-        tasks: [
-            {
-                name: "Task #1: Subset Checker",
-                content: "Write a C++ program that determines whether a given small array is a subset of a larger array. The program should compare the elements of both arrays and display an appropriate message indicating whether all elements of the small array are present in the large array."
-            }
-        ]
-    },
-    social: {
-        title: "قضايا اجتماعية",
-        chapters: [
-            {
-                "name": "Chapter 1",
-                "subChapters": [
-                    { "name": "Part 1", "file": "قضايا اجتماعية/Ethics_chapter1-Part1.pdf" },
-                    { "name": "Part 2", "file": "قضايا اجتماعية/Chapter1-Part2.pdf" },
-                    { "name": "اسئلة الفصل الاول", "file": "قضايا اجتماعية/Chapter1 Questions.pdf" }
-                ]
-            }
-        ],
-        playlists: [],
-        tasks: []
-    },
-    reports: {
-        title: "كتابة التقارير",
-        chapters: [
-            { name: "Book", file: "كتابة تقارير/Report Writing and Presentation skills 2025.pdf" }
-        ],
-        playlists: [
-            { name: "Playlist 1 (كتابة التقارير)", url: "https://www.youtube.com/watch?v=mdjyeHaWCgU&list=PLMzaNeHCFdm_kDzoxwO8t2wVcypqOhXCt" }
-        ],
-        tasks: []
-    },
-    datacom: {
-        title: "تراسل البيانات",
-        chapters: [
-            {
-                "name": "محتوى العملي - م. أحمد عوض",
-                "subChapters": [
-                    { "name": "1- Download Packet Tracer", "file": "https://drive.google.com/file/d/1qaETIr-7H19YFC63s75Zj9l0HdQOsCXT/view?usp=sharing" },
-                    { "name": "2- Install Packet Tracer", "file": "https://www.youtube.com/watch?v=YaeBPw3SPmE" },
-                    { "name": "3- Download Wireshark", "file": "https://drive.google.com/file/d/11CE37O-DRQg8eqpSkSl2tpegmlkJzork/view?usp=sharing" },
-                    { "name": "4- Packet Tracer Intro & LAN", "file": "https://drive.google.com/file/d/1SUSA1kqr5wYnvGUXMmFnJ8uwO_g1iE_C/view?usp=sharing" },
-                    { "name": "5- Cisco Switch Config Part 1", "file": "https://drive.google.com/file/d/1Ppoi8BDzeuidB32HCOuBx9lZeGa-Ol3t/view?usp=sharing" },
-                    { "name": "6- Cisco Switch Config part 2", "file": "https://drive.google.com/file/d/1EOz-bWfup79WGSSXUIxQZOe9A0zTLHEc/view?usp=sharing" },
-                    { "name": "7- Real application & Wireshark", "file": "https://drive.google.com/file/d/1Wf3_Zsy-sFlzdo_1G_gwFUg6atMeTkII/view?usp=sharing" },
-                    { "name": "8- PT Review & Simulation Mode", "file": "https://drive.google.com/file/d/17O5aThR1egosgP9m0OVCKkOqCirmfxSF/view?usp=sharing" },
-                    { "name": "9- WAN Simulation On PT", "file": "https://drive.google.com/file/d/1UOaX2RTdrw2UHjd-YTDod3YC121RSAjH/view?usp=sharing" },
-                    { "name": "10- IPV4 Addressing", "file": "https://drive.google.com/file/d/1u-HX6jhgvDV63uueNebJmYHedzxHLyIm/view?usp=sharing" },
-                    { "name": "11- IPV6 Addressing", "file": "https://drive.google.com/file/d/1IBM2C7yNdk-bHToefepuTEnzrRHFGHbD/view?usp=sharing" },
-                    { "name": "12- Basic DNS Config on PT", "file": "https://drive.google.com/file/d/1PcdFKjM5F3AsmYJmIhhMi8GZ08LoaSA7/view?usp=sharing" },
-                    { "name": "13- Basic DHCP Config on PT", "file": "https://drive.google.com/file/d/16rHnCU1r9rdtQ7mQjuHp9S-Zmmni_FT9/view?usp=sharing" }
-                ]
-            },
-            { name: "ملخص تراسل بيانات", file: "تراسل بيانات/ملخص تراسل بيانات/Network_Communication_Essentials.pdf" },
-            { name: "Part 1", file: "تراسل بيانات/Transmission Basics_ 1 CYBER_ 2026 Lecture Notes.pdf" }
-        ],
-        playlists: [
-            { name: "تراسل البيانات - Playlist", url: "https://youtube.com/playlist?list=PLQX_sSyvDrILY5AGyc3ZwL03I-ppGkkI8&si=1Eb1cxPQM0_xS-39" }
-        ],
-        tasks: []
-    }
-};
+// Data migrated to data/materials.json for performance and cleanliness
+let SUBJECT_DATA = window.SUBJECT_DATA_FALLBACK || {}; // Use local fallback if fetch fails (CORS/Offline)
 
 async function loadMaterials() {
     try {
-        const response = await fetch('data/materials.json?v=2.4');
+        const response = await fetch('data/materials.json?v=' + Date.now());
+        if (!response.ok) throw new Error('Fetch failed');
         const data = await response.json();
         if (data && Object.keys(data).length > 0) {
             SUBJECT_DATA = data;
         }
-    } catch (err) { console.error("Failed to load materials from JSON, using code defaults."); }
+    } catch (err) {
+        console.warn("Using offline fallback materials.");
+        if (Object.keys(SUBJECT_DATA).length === 0) {
+            showToast("Error loading course materials.", "error");
+        }
+    }
 }
 loadMaterials();
 
@@ -1134,14 +1096,14 @@ window.openSubject = (id) => {
     if (tasksList) {
         if (data.tasks && data.tasks.length > 0) {
             tasksList.innerHTML = data.tasks.map((task, index) => `
-                <li class="task-card">
-                    <div class="task-header" onclick="toggleTask(${index})" style="cursor: pointer;">
-                        <div class="task-title">
-                            <i class="fas fa-terminal"></i> ${escapeHTML(task.name)}
-                        </div>
-                        <div class="task-actions">
-                            <i id="taskChevron-${index}" class="fas fa-chevron-down task-chevron"></i>
-                            ${task.content ?
+                    <li class="task-card">
+                        <div class="task-header" onclick="toggleTask(${index})" style="cursor: pointer;">
+                            <div class="task-title">
+                                <i class="fas fa-terminal"></i> ${escapeHTML(task.name)}
+                            </div>
+                            <div class="task-actions">
+                                <i id="taskChevron-${index}" class="fas fa-chevron-down task-chevron"></i>
+                                ${task.content ?
                     `<button class="btn-copy-alt" onclick="event.stopPropagation(); copyToClipboard(\`${escapeHTML(task.content)}\`)">
                                     <i class="fas fa-clone"></i> Copy
                                 </button>` :
@@ -1149,15 +1111,16 @@ window.openSubject = (id) => {
                                     <i class="fas fa-file-download"></i> Download
                                 </button>`
                 }
+                            </div>
                         </div>
-                    </div>
                     ${task.content ? `
                         <div id="taskContent-${index}" class="task-content-box" style="display: none;">
                             ${escapeHTML(task.content)}
                         </div>
-                    ` : ''}
+                    ` : ''
+                }
                 </li>
-            `).join('');
+                    `).join('');
         } else {
             tasksList.innerHTML = `<li class="resource-item" style="opacity: 0.5; justify-content: center;"><span>No tasks available yet</span></li>`;
         }
@@ -1200,10 +1163,11 @@ window.copyToClipboard = (text) => {
     });
 };
 
-function showToast(message) {
+function showToast(message, type = 'success') {
     const toast = document.createElement('div');
-    toast.className = 'toast-notification';
-    toast.innerHTML = `<i class="fas fa-check-circle"></i> <span></span>`;
+    toast.className = `toast-notification ${type}`;
+    const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
+    toast.innerHTML = `<i class="fas ${icon}"></i> <span></span>`;
     toast.querySelector('span').textContent = message;
     document.body.appendChild(toast);
     setTimeout(() => {
