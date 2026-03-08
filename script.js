@@ -1060,7 +1060,8 @@ let SUBJECT_DATA = {
                     { "name": "Part 2", "file": "قضايا اجتماعية/Chapter1-Part2.pdf" },
                     { "name": "اسئلة الفصل الاول", "file": "قضايا اجتماعية/Chapter1 Questions.pdf" }
                 ]
-            }
+            },
+            { "name": "Chapter 2", "file": "قضايا اجتماعية/Chapter2.pdf" }
         ],
         "playlists": [],
         "tasks": []
