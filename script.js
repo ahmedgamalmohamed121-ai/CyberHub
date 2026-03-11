@@ -1053,17 +1053,38 @@ let SUBJECT_DATA = {
     "social": {
         "title": "قضايا اجتماعية",
         "chapters": [
+            { "name": "منهج قضايا كامل", "file": "https://drive.google.com/drive/folders/1afatTuvWz4FyVzUsf94cFk0b4PS1H9iI" },
             {
                 "name": "Chapter 1",
                 "subChapters": [
-                    { "name": "Part 1", "file": "قضايا اجتماعية/Ethics_chapter1-Part1.pdf" },
-                    { "name": "Part 2", "file": "قضايا اجتماعية/Chapter1-Part2.pdf" },
-                    { "name": "اسئلة الفصل الاول", "file": "قضايا اجتماعية/Chapter1 Questions.pdf" }
+                    { "name": "Part 1 (PDF)", "file": "قضايا اجتماعية/Ethics_chapter1-Part1.pdf" },
+                    { "name": "Part 2 (PDF)", "file": "قضايا اجتماعية/Chapter1-Part2.pdf" },
+                    { "name": "اسئلة الفصل الاول (PDF)", "file": "قضايا اجتماعية/Chapter1 Questions.pdf" }
                 ]
             },
             { "name": "Chapter 2", "file": "قضايا اجتماعية/Chapter2.pdf" }
         ],
-        "playlists": [],
+        "playlists": [
+            {
+                "name": "Chapter 1",
+                "subItems": [
+                    { "name": "Video (1)", "url": "https://youtu.be/Ww5ZJ5udjMM" },
+                    { "name": "Video (2)", "url": "https://youtu.be/nl2dOUwqaUY" },
+                    { "name": "Video (3)", "url": "https://youtu.be/wErJ28IMa9w" },
+                    { "name": "Video (4)", "url": "https://youtu.be/RhFPwRN-UiI" }
+                ]
+            },
+            {
+                "name": "Chapter 2",
+                "subItems": [
+                    { "name": "Video (1)", "url": "https://youtu.be/exEUdpBGXMU" },
+                    { "name": "Video (2)", "url": "https://youtu.be/pAAlcX4zHSk" },
+                    { "name": "Video (3)", "url": "https://youtu.be/3hIptKMSYiY" },
+                    { "name": "Video (4)", "url": "https://youtu.be/OYJ6lpUH-1I" },
+                    { "name": "Video (5)", "url": "https://youtu.be/Fzz3U6PUD18" }
+                ]
+            }
+        ],
         "tasks": []
     },
     "reports": {
@@ -1127,6 +1148,25 @@ window.openSubject = (id) => {
     if (playlistList) {
         if (data.playlists && data.playlists.length > 0) {
             playlistList.innerHTML = data.playlists.map((pl, index) => {
+                if (pl.subItems) {
+                    return `
+                        <li class="nested-chapter">
+                            <div class="resource-item" onclick="toggleSubPlaylist(${index})" style="cursor: pointer;">
+                                <span><i class="fab fa-youtube"></i> ${escapeHTML(pl.name)}</span>
+                                <i id="subPlaylistChevron-${index}" class="fas fa-chevron-down sub-chapter-chevron" style="transition: transform 0.3s; opacity: 0.6;"></i>
+                            </div>
+                            <div id="subPlaylistContent-${index}" class="sub-chapters-container">
+                                ${pl.subItems.map(sub => `
+                                    <div class="resource-item sub-resource" onclick="window.open('${escapeHTML(sub.url)}', '_blank')" style="cursor: pointer;">
+                                        <span><i class="fab fa-youtube"></i> ${escapeHTML(sub.name)}</span>
+                                        <button class="btn-xs watch">Watch</button>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </li>
+                    `;
+                }
+
                 const isGithub = pl.url.includes('github.com');
                 const isYoutube = pl.url.includes('youtube.com') || pl.url.includes('youtu.be');
                 const iconClass = isYoutube ? 'fab fa-youtube' : (isGithub ? 'fab fa-github' : 'fas fa-external-link-alt');
@@ -1138,7 +1178,6 @@ window.openSubject = (id) => {
                     <span><i class="${iconClass}"></i> ${escapeHTML(pl.name)}</span>
                     <button class="btn-xs watch">${btnLabel}</button>
                 </li>
-                ${index < data.playlists.length - 1 ? '<div class="playlist-separator">OR</div>' : ''}
             `}).join('');
         } else {
             playlistList.innerHTML = `<li class="resource-item" style="opacity: 0.5; justify-content: center;"><span>No items in playlist yet</span></li>`;
@@ -1149,10 +1188,11 @@ window.openSubject = (id) => {
     const chaptersList = document.getElementById('chaptersList');
     if (chaptersList) {
         chaptersList.innerHTML = data.chapters.map((ch, chIndex) => {
+            const isLong = ch.name.length > 25;
             if (ch.subChapters) {
                 return `
                     <li class="nested-chapter">
-                        <div class="resource-item" onclick="toggleSubChapter(${chIndex})" style="cursor: pointer;">
+                        <div class="resource-item ${isLong ? 'long-text' : ''}" onclick="toggleSubChapter(${chIndex})" style="cursor: pointer;">
                             <span><i class="fas fa-folder-open"></i> ${escapeHTML(ch.name)}</span>
                             <i id="subChapterChevron-${chIndex}" class="fas fa-chevron-down sub-chapter-chevron" style="transition: transform 0.3s; opacity: 0.6;"></i>
                         </div>
@@ -1172,7 +1212,7 @@ window.openSubject = (id) => {
                 `;
             }
             return `
-                <li class="resource-item">
+                <li class="resource-item ${isLong ? 'long-text' : ''}">
                     <span><i class="fas fa-folder-open"></i> ${escapeHTML(ch.name)}</span>
                     <button class="btn-xs download" onclick="${ch.file ? `window.open('${escapeHTML(ch.file)}', '_blank')` : "alert('📚 لم يتم رفع هذا الفصل حتى الآن\\n\\nسيتم رفع الملف قريباً إن شاء الله')"}">Open</button>
                 </li>
@@ -1227,6 +1267,17 @@ window.openSubject = (id) => {
 window.toggleSubChapter = (index) => {
     const content = document.getElementById(`subChapterContent-${index}`);
     const chevron = document.getElementById(`subChapterChevron-${index}`);
+    content.classList.toggle('active');
+    if (content.classList.contains('active')) {
+        chevron.style.transform = 'rotate(180deg)';
+    } else {
+        chevron.style.transform = 'rotate(0deg)';
+    }
+};
+
+window.toggleSubPlaylist = (index) => {
+    const content = document.getElementById(`subPlaylistContent-${index}`);
+    const chevron = document.getElementById(`subPlaylistChevron-${index}`);
     content.classList.toggle('active');
     if (content.classList.contains('active')) {
         chevron.style.transform = 'rotate(180deg)';

@@ -92,18 +92,22 @@
         "title": "قضايا اجتماعية",
         "chapters": [
             {
+                "name": "منهج قضايا كامل",
+                "file": "https://drive.google.com/drive/folders/1afatTuvWz4FyVzUsf94cFk0b4PS1H9iI"
+            },
+            {
                 "name": "Chapter 1",
                 "subChapters": [
                     {
-                        "name": "Part 1",
+                        "name": "Part 1 (PDF)",
                         "file": "قضايا اجتماعية/Ethics_chapter1-Part1.pdf"
                     },
                     {
-                        "name": "Part 2",
+                        "name": "Part 2 (PDF)",
                         "file": "قضايا اجتماعية/Chapter1-Part2.pdf"
                     },
                     {
-                        "name": "اسئلة الفصل الاول",
+                        "name": "اسئلة الفصل الاول (PDF)",
                         "file": "قضايا اجتماعية/Chapter1 Questions.pdf"
                     }
                 ]
@@ -113,7 +117,54 @@
                 "file": "قضايا اجتماعية/Chapter2.pdf"
             }
         ],
-        "playlists": [],
+        "playlists": [
+            {
+                "name": "Chapter 1",
+                "subItems": [
+                    {
+                        "name": "Video (1)",
+                        "url": "https://youtu.be/Ww5ZJ5udjMM"
+                    },
+                    {
+                        "name": "Video (2)",
+                        "url": "https://youtu.be/nl2dOUwqaUY"
+                    },
+                    {
+                        "name": "Video (3)",
+                        "url": "https://youtu.be/wErJ28IMa9w"
+                    },
+                    {
+                        "name": "Video (4)",
+                        "url": "https://youtu.be/RhFPwRN-UiI"
+                    }
+                ]
+            },
+            {
+                "name": "Chapter 2",
+                "subItems": [
+                    {
+                        "name": "Video (1)",
+                        "url": "https://youtu.be/exEUdpBGXMU"
+                    },
+                    {
+                        "name": "Video (2)",
+                        "url": "https://youtu.be/pAAlcX4zHSk"
+                    },
+                    {
+                        "name": "Video (3)",
+                        "url": "https://youtu.be/3hIptKMSYiY"
+                    },
+                    {
+                        "name": "Video (4)",
+                        "url": "https://youtu.be/OYJ6lpUH-1I"
+                    },
+                    {
+                        "name": "Video (5)",
+                        "url": "https://youtu.be/Fzz3U6PUD18"
+                    }
+                ]
+            }
+        ],
         "tasks": []
     },
     "reports": {

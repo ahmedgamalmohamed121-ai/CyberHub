@@ -2348,24 +2348,19 @@ input:checked+.slider-mini:before {
 
     /* Specific Fix for long titles like OOP Course */
     .resource-item.long-text {
-        padding: 0.75rem 1rem !important;
-        gap: 8px !important;
+        padding: 0.7rem 0.85rem !important;
+        gap: 6px !important;
     }
 
     .resource-item.long-text span {
-        font-size: 0.7rem !important;
-        line-height: 1.3 !important;
-    }
-
-    .resource-item.long-text span i {
-        font-size: 0.8rem !important;
-        margin-right: 5px !important;
+        font-size: 0.75rem !important;
+        font-weight: 600 !important;
     }
 
     .resource-item.long-text .btn-xs {
-        min-width: 65px !important;
-        padding: 5px 10px !important;
-        font-size: 0.6rem !important;
+        min-width: 80px !important;
+        padding: 6px 12px !important;
+        font-size: 0.65rem !important;
     }
 }
 
@@ -2543,6 +2538,11 @@ input:checked+.slider-mini:before {
 .resource-item span {
     color: #e2e8f0;
     font-weight: 500;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-right: 12px;
 }
 
 .resource-item span i {
@@ -2560,7 +2560,8 @@ input:checked+.slider-mini:before {
     font-weight: 800 !important;
     cursor: pointer !important;
     text-transform: uppercase !important;
-    min-width: 100px !important;
+    min-width: 90px !important;
+    flex-shrink: 0 !important;
     border: none !important;
     transition: all 0.2s !important;
 }
