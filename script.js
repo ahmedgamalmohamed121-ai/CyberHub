@@ -1038,14 +1038,7 @@ let SUBJECT_DATA = {
         "chapters": [
             { "name": "Chapter 1", "file": "تراكيب محددة/Chapter 1 Set theory.pdf" },
             { "name": "Chapter 2", "file": "تراكيب محددة/Chapter 2 Relations.pdf" },
-            { "name": "Chapter 6", "file": "تراكيب محددة/Graph 1 شابتر 6.pdf" },
-            {
-                "name": "شابتر 1 شرح عربي وملخص",
-                "subChapters": [
-                    { "name": "شرح شابتر 1 بالعربي", "file": "تراكيب محددة/شابتر 1 شرح عربي وملخص/شابتر 1 تراكيب محددة.pdf" },
-                    { "name": "ملخص شابتر 1", "file": "تراكيب محددة/شابتر 1 شرح عربي وملخص/ملخص شابتر 1 تراكيب.pdf" }
-                ]
-            }
+            { "name": "Chapter 6", "file": "تراكيب محددة/Graph 1 شابتر 6.pdf" }
         ],
         "playlists": [
             { "name": "Playlist 1 (Discrete Math)", "url": "https://youtube.com/playlist?list=PLFOa5NvVCDcioQAS-RopCIitvUYO7aPu5&si=yggpTGdYa0Vc5RV_" },
