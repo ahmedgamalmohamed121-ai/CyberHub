@@ -1037,7 +1037,15 @@ let SUBJECT_DATA = {
         "title": "تراكيب محددة",
         "chapters": [
             { "name": "Chapter 1", "file": "تراكيب محددة/Chapter 1 Set theory.pdf" },
-            { "name": "Chapter 2", "file": "تراكيب محددة/Chapter 2 Relations.pdf" }
+            { "name": "Chapter 2", "file": "تراكيب محددة/Chapter 2 Relations.pdf" },
+            { "name": "Chapter 6", "file": "تراكيب محددة/Graph 1 شابتر 6.pdf" },
+            {
+                "name": "شابتر 1 شرح عربي وملخص",
+                "subChapters": [
+                    { "name": "شرح شابتر 1 بالعربي", "file": "تراكيب محددة/شابتر 1 شرح عربي وملخص/شابتر 1 تراكيب محددة.pdf" },
+                    { "name": "ملخص شابتر 1", "file": "تراكيب محددة/شابتر 1 شرح عربي وملخص/ملخص شابتر 1 تراكيب.pdf" }
+                ]
+            }
         ],
         "playlists": [
             { "name": "Playlist 1 (Discrete Math)", "url": "https://youtube.com/playlist?list=PLFOa5NvVCDcioQAS-RopCIitvUYO7aPu5&si=yggpTGdYa0Vc5RV_" },
@@ -1121,7 +1129,14 @@ let SUBJECT_DATA = {
                 ]
             },
             { "name": "ملخص تراسل بيانات", "file": "تراسل بيانات/ملخص تراسل بيانات/Network_Communication_Essentials.pdf" },
-            { "name": "Part 1", "file": "تراسل بيانات/Transmission Basics_ 1 CYBER_ 2026 Lecture Notes.pdf" }
+            { "name": "Part 1", "file": "تراسل بيانات/Transmission Basics_ 1 CYBER_ 2026 Lecture Notes.pdf" },
+            {
+                "name": "شرح عربي وملخص سريع",
+                "subChapters": [
+                    { "name": "شرح Part 1 عربي", "file": "تراسل بيانات/شرح تراسل بيانات عربي و ملخص سريع/شرح تراسل بياانات part 1 عربي.pdf" },
+                    { "name": "ملخص سريع واسئلة", "file": "تراسل بيانات/شرح تراسل بيانات عربي و ملخص سريع/ملخص سريع تراسل و اسئلة.pdf" }
+                ]
+            }
         ],
         "playlists": [
             { "name": "تراسل البيانات - Playlist", "url": "https://youtube.com/playlist?list=PLQX_sSyvDrILY5AGyc3ZwL03I-ppGkkI8&si=1Eb1cxPQM0_xS-39" }
