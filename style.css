@@ -30,7 +30,7 @@
 }
 
 .light-mode body::before {
-    filter: grayscale(1) opacity(0.12);
+    display: none;
 }
 
 .light-mode .navbar {
