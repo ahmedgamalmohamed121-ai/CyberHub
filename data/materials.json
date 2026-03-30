@@ -73,6 +73,27 @@
             {
                 "name": "Chapter 6",
                 "file": "تراكيب محددة/Graph 1 شابتر 6.pdf"
+            },
+            {
+                "name": "Midterm",
+                "subChapters": [
+                    {
+                        "name": "Midterm 1",
+                        "file": "تراكيب محددة/Midterm/Midterm 1.pdf"
+                    },
+                    {
+                        "name": "Midterm",
+                        "file": "تراكيب محددة/Midterm/Midterm.pdf"
+                    },
+                    {
+                        "name": "Model 1",
+                        "file": "تراكيب محددة/Midterm/Model 1.pdf"
+                    },
+                    {
+                        "name": "Model",
+                        "file": "تراكيب محددة/Midterm/Model.pdf"
+                    }
+                ]
             }
         ],
         "playlists": [
@@ -185,6 +206,18 @@
             {
                 "name": "Book",
                 "file": "كتابة تقارير/Report Writing and Presentation skills 2025.pdf"
+            },
+            {
+                "name": "Chapter 1",
+                "file": "كتابة تقارير/RWandPS - Ch1.pdf"
+            },
+            {
+                "name": "Chapter 2",
+                "file": "كتابة تقارير/RWandPS - Ch2.pdf"
+            },
+            {
+                "name": "Chapter 3",
+                "file": "كتابة تقارير/RWandPS - Ch3.pdf"
             }
         ],
         "playlists": [

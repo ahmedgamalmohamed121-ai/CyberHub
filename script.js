@@ -1038,7 +1038,16 @@ let SUBJECT_DATA = {
         "chapters": [
             { "name": "Chapter 1", "file": "تراكيب محددة/Chapter 1 Set theory.pdf" },
             { "name": "Chapter 2", "file": "تراكيب محددة/Chapter 2 Relations.pdf" },
-            { "name": "Chapter 6", "file": "تراكيب محددة/Graph 1 شابتر 6.pdf" }
+            { "name": "Chapter 6", "file": "تراكيب محددة/Graph 1 شابتر 6.pdf" },
+            {
+                "name": "Midterm",
+                "subChapters": [
+                    { "name": "Midterm 1", "file": "تراكيب محددة/Midterm/Midterm 1.pdf" },
+                    { "name": "Midterm", "file": "تراكيب محددة/Midterm/Midterm.pdf" },
+                    { "name": "Model 1", "file": "تراكيب محددة/Midterm/Model 1.pdf" },
+                    { "name": "Model", "file": "تراكيب محددة/Midterm/Model.pdf" }
+                ]
+            }
         ],
         "playlists": [
             { "name": "Playlist 1 (Discrete Math)", "url": "https://youtube.com/playlist?list=PLFOa5NvVCDcioQAS-RopCIitvUYO7aPu5&si=yggpTGdYa0Vc5RV_" },
@@ -1093,7 +1102,10 @@ let SUBJECT_DATA = {
     "reports": {
         "title": "كتابة التقارير",
         "chapters": [
-            { "name": "Book", "file": "كتابة تقارير/Report Writing and Presentation skills 2025.pdf" }
+            { "name": "Book", "file": "كتابة تقارير/Report Writing and Presentation skills 2025.pdf" },
+            { "name": "Chapter 1", "file": "كتابة تقارير/RWandPS - Ch1.pdf" },
+            { "name": "Chapter 2", "file": "كتابة تقارير/RWandPS - Ch2.pdf" },
+            { "name": "Chapter 3", "file": "كتابة تقارير/RWandPS - Ch3.pdf" }
         ],
         "playlists": [
             { "name": "Playlist 1 (كتابة التقارير)", "url": "https://www.youtube.com/watch?v=mdjyeHaWCgU&list=PLMzaNeHCFdm_kDzoxwO8t2wVcypqOhXCt" }
