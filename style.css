@@ -9,7 +9,7 @@
     --primary-purple: #7928ca;
     --primary-green: #00ff41;
     --text-main: #ffffff;
-    --text-muted: #cbd5e1; /* Brightened from #94a3b8 for better contrast */
+    --text-muted: #94a3b8;
     --border-glow: rgba(0, 243, 255, 0.3);
 
     --font-main: 'Inter', sans-serif;
@@ -160,11 +160,6 @@ body::before {
     z-index: -2;
 }
 
-/* Secondary Glow */
-.bg-mesh-overlay {
-    display: none; /* Hide the theme overlay since we are back to mesh */
-}
-
 /* Animated Floating Blobs for Premium Feel */
 body::after {
     content: '';
@@ -173,6 +168,8 @@ body::after {
     left: 0;
     width: 100%;
     height: 100%;
+    background:
+        radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(0, 243, 255, 0.05) 0%, transparent 30%);
     z-index: -1;
     pointer-events: none;
     background-attachment: fixed;
@@ -556,24 +553,16 @@ body::after {
     text-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
 }
 
-.hero-description-compact {
-    margin: 1.5rem 0;
-    max-width: 800px;
-}
-
 .hero-description-compact p {
-    font-size: 1.25rem;
-    color: #ffffff;
+    font-size: 1.2rem;
+    color: #fff;
     margin-bottom: 0.5rem;
     font-weight: 500;
-    text-shadow: 0 4px 8px rgba(0, 0, 0, 0.9); /* Deep shadow for clarity */
 }
 
 .hero-description-compact .sub-desc {
-    font-size: 1.05rem;
+    font-size: 0.9rem;
     color: var(--text-muted);
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9);
-    line-height: 1.6;
 }
 
 .typing-text {
