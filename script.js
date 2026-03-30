@@ -1122,14 +1122,7 @@ let SUBJECT_DATA = {
                 ]
             },
             { "name": "ملخص تراسل بيانات", "file": "تراسل بيانات/ملخص تراسل بيانات/Network_Communication_Essentials.pdf" },
-            { "name": "Part 1", "file": "تراسل بيانات/Transmission Basics_ 1 CYBER_ 2026 Lecture Notes.pdf" },
-            {
-                "name": "شرح عربي وملخص سريع",
-                "subChapters": [
-                    { "name": "شرح Part 1 عربي", "file": "تراسل بيانات/شرح تراسل بيانات عربي و ملخص سريع/شرح تراسل بياانات part 1 عربي.pdf" },
-                    { "name": "ملخص سريع واسئلة", "file": "تراسل بيانات/شرح تراسل بيانات عربي و ملخص سريع/ملخص سريع تراسل و اسئلة.pdf" }
-                ]
-            }
+            { "name": "Part 1", "file": "تراسل بيانات/Transmission Basics_ 1 CYBER_ 2026 Lecture Notes.pdf" }
         ],
         "playlists": [
             { "name": "تراسل البيانات - Playlist", "url": "https://youtube.com/playlist?list=PLQX_sSyvDrILY5AGyc3ZwL03I-ppGkkI8&si=1Eb1cxPQM0_xS-39" }
