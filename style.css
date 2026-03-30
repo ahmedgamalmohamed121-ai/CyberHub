@@ -3,14 +3,14 @@
 /* CSS Reset & Variables */
 :root {
     --bg-dark: #020617;
-    --bg-card: rgba(15, 23, 42, 0.7);
-    --primary-cyan: #10b981; /* Emerald Green */
-    --primary-blue: #0ea5e9; /* Ocean Blue */
-    --primary-purple: #06b6d4; /* Crystal Teal */
-    --primary-green: #34d399; /* Light Emerald */
-    --text-main: #ffffff;
+    --bg-card: rgba(15, 23, 42, 0.8);
+    --primary-cyan: #38bdf8; /* Diamond Blue */
+    --primary-blue: #0ea5e9; /* Sky Indigo */
+    --primary-purple: #0284c7; /* Deep Sea Blue */
+    --primary-green: #7dd3fc; /* Soft Sky */
+    --text-main: #f8fafc;
     --text-muted: #94a3b8;
-    --border-glow: rgba(16, 185, 129, 0.4);
+    --border-glow: rgba(56, 189, 248, 0.3);
 
     --font-main: 'Inter', sans-serif;
     --font-heading: 'Poppins', sans-serif;
