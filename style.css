@@ -793,13 +793,19 @@ body::after {
 
 .card-icon {
     font-size: 3.5rem;
-    background: linear-gradient(135deg, var(--primary-cyan), var(--primary-green));
+    background: linear-gradient(135deg, var(--primary-cyan), var(--primary-blue));
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
     margin-bottom: 1.5rem;
-    filter: drop-shadow(0 0 10px rgba(0, 243, 255, 0.4));
-    transition: transform 0.4s;
+    filter: drop-shadow(0 10px 15px rgba(0, 243, 255, 0.3));
+    transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    display: inline-block;
+}
+
+.subject-card:hover .card-icon {
+    transform: perspective(500px) translateZ(30px) rotateY(15deg);
+    filter: drop-shadow(0 20px 30px rgba(16, 185, 129, 0.6));
 }
 
 .glass-card:hover .card-icon {
