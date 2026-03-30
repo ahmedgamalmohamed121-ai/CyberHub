@@ -15,16 +15,22 @@
     --font-main: 'Inter', sans-serif;
     --font-heading: 'Poppins', sans-serif;
     --font-code: 'JetBrains Mono', monospace;
+    --bg-overlay: rgba(10, 15, 28, 0.92);
 }
 
 /* Light Mode Overrides */
 .light-mode {
     --bg-dark: #f8fafc;
     --bg-card: rgba(255, 255, 255, 0.9);
+    --bg-overlay: rgba(248, 250, 252, 0.95);
     --text-main: #0f172a;
     --text-muted: #64748b;
     --border-glow: rgba(0, 124, 240, 0.2);
     --glass-bg: rgba(255, 255, 255, 0.8);
+}
+
+.light-mode body::before {
+    filter: grayscale(1) opacity(0.12);
 }
 
 .light-mode .navbar {
@@ -147,13 +153,14 @@ body::before {
     width: 100%;
     height: 100%;
     background:
-        linear-gradient(rgba(10, 15, 28, 0.92), rgba(10, 15, 28, 0.92)),
+        linear-gradient(var(--bg-overlay, rgba(10, 15, 28, 0.92)), var(--bg-overlay, rgba(10, 15, 28, 0.92))),
         url('assets/cyber_bg.png');
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
     z-index: -2;
     filter: saturate(0.8) contrast(1.1);
+    transition: background 0.5s ease;
 }
 
 /* Secondary Glow Overlay */
