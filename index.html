@@ -25,10 +25,13 @@
     <link rel="stylesheet" href="style.css?v=6.2">
 
     <!-- Monaco Editor -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
 
     <!-- Pyodide (Python in Browser) - High-performance local engine -->
-    <script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
+
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
 
     <!-- Anti-Flash Protection -->
     <style>
@@ -418,7 +421,7 @@
                     <span class="close-modal" id="closeSchedulePreview">&times;</span>
                     <h2 id="previewTitle">Schedule Preview</h2>
                     <div class="preview-container">
-                        <img id="scheduleImage" src="" alt="Schedule"
+                        <img id="scheduleImage" src="" alt="Schedule" loading="lazy"
                             style="width: 100%; display: none; border-radius: 8px;">
                         <div id="noPreviewMessage" style="text-align: center; padding: 3rem 0; opacity: 0.6;">
                             <i class="fas fa-file-excel"
