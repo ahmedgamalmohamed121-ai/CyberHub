@@ -152,30 +152,17 @@ body::before {
     left: 0;
     width: 100%;
     height: 100%;
-    background-image: url('assets/cyber_bg.png');
-    background-size: cover;
-    background-position: center;
-    background-attachment: fixed;
+    background:
+        radial-gradient(circle at 0% 0%, rgba(0, 243, 255, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 100% 0%, rgba(0, 255, 65, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 50% 100%, rgba(0, 243, 255, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 100% 100%, rgba(15, 23, 42, 1) 0%, #020617 100%);
     z-index: -2;
-    filter: saturate(0.8) contrast(1.1);
 }
 
-/* Secondary Glow & Theme Overlay */
+/* Secondary Glow */
 .bg-mesh-overlay {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background:
-        linear-gradient(var(--bg-overlay, rgba(10, 15, 28, 0.92)), var(--bg-overlay, rgba(10, 15, 28, 0.92))),
-        radial-gradient(circle at 0% 0%, rgba(0, 243, 255, 0.1) 0%, transparent 50%),
-        radial-gradient(circle at 100% 0%, rgba(0, 255, 65, 0.05) 0%, transparent 50%),
-        radial-gradient(circle at 50% 100%, rgba(0, 243, 255, 0.05) 0%, transparent 50%);
-    z-index: -1.5;
-    pointer-events: none;
-    transition: background 0.5s ease-in-out;
+    display: none; /* Hide the theme overlay since we are back to mesh */
 }
 
 /* Animated Floating Blobs for Premium Feel */
