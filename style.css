@@ -2,15 +2,15 @@
 
 /* CSS Reset & Variables */
 :root {
-    --bg-dark: #0f172a;
-    --bg-card: rgba(15, 23, 42, 0.6);
-    --primary-cyan: #ec4899; /* Electric Rose */
-    --primary-blue: #8b5cf6; /* Royal Amethyst */
-    --primary-purple: #c026d3; /* Vibrant Fuchsia */
-    --primary-green: #2dd4bf; /* Deep Ocean Teal for contrast */
-    --text-main: #f8fafc;
+    --bg-dark: #000000;
+    --bg-card: rgba(10, 10, 10, 0.7);
+    --primary-cyan: #22d3ee; /* Cyber Cyan */
+    --primary-blue: #a3e635; /* Electric Lime */
+    --primary-purple: #facc15; /* Laser Yellow */
+    --primary-green: #4ade80; /* Bright Green */
+    --text-main: #ffffff;
     --text-muted: #94a3b8;
-    --border-glow: rgba(139, 92, 246, 0.4);
+    --border-glow: rgba(163, 230, 53, 0.4);
 
     --font-main: 'Inter', sans-serif;
     --font-heading: 'Poppins', sans-serif;
