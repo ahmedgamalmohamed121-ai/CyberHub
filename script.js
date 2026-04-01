@@ -1025,7 +1025,10 @@ let SUBJECT_DATA = {
             { "name": "LECTURE 2 (د/ليلي)", "file": "برمجة 2/Lecture2_Constructor.pdf" },
             { "name": "LECTURE 3 (د/ليلي)", "file": "برمجة 2/Lecture3_Setter_Getter.pdf" },
             { "name": "LECTURE 4 (د/ليلي)", "file": "برمجة 2/Lecture4_Memory_and_inline_VS_regular (1).pdf" },
-            { "name": "LECTURE 5 (د/ليلي)", "file": "برمجة 2/Lecture5_This_Pointer__Pointers_and_Memory.pdf" }
+            { "name": "LECTURE 5 (د/ليلي)", "file": "برمجة 2/Lecture5_This_Pointer__Pointers_and_Memory.pdf" },
+            { "name": "LECTURE 6 (د/ليلي)", "file": "برمجة 2/OOP_Lecture 6.pdf" },
+            { "name": "LECTURE 7 (د/ليلي)", "file": "برمجة 2/Lec 7 More about classes.pdf" },
+            { "name": "LECTURE 8 (د/ليلي)", "file": "برمجة 2/OOP_Lecture 8.pdf" }
         ],
         "playlists": [
             { "name": "برمجة 2 - Playlist", "url": "https://youtube.com/playlist?list=PLCZPUiJ5kQaE3HZvCTG_xEyPKQjyBGXcm&si=B9lA6geX51eRDF3n" },
