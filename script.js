@@ -1108,7 +1108,9 @@ let SUBJECT_DATA = {
             { "name": "Book", "file": "كتابة تقارير/Report Writing and Presentation skills 2025.pdf" },
             { "name": "Chapter 1", "file": "كتابة تقارير/RWandPS - Ch1.pdf" },
             { "name": "Chapter 2", "file": "كتابة تقارير/RWandPS - Ch2.pdf" },
-            { "name": "Chapter 3", "file": "كتابة تقارير/RWandPS - Ch3.pdf" }
+            { "name": "Chapter 3", "file": "كتابة تقارير/RWandPS - Ch3.pdf" },
+            { "name": "Chapter 4", "file": "كتابة تقارير/Chapter 4 - Report Writing.pdf" },
+            { "name": "Chapter 5", "file": "كتابة تقارير/Chapter 5 - Report Writing.pdf" }
         ],
         "playlists": [
             { "name": "Playlist 1 (كتابة التقارير)", "url": "https://www.youtube.com/watch?v=mdjyeHaWCgU&list=PLMzaNeHCFdm_kDzoxwO8t2wVcypqOhXCt" }
