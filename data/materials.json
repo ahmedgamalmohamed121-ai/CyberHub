@@ -87,6 +87,10 @@
                 "file": "تراكيب محددة/Graph 1 شابتر 6.pdf"
             },
             {
+                "name": "Trees Part 1",
+                "file": "تراكيب محددة/Trees part 1.pdf"
+            },
+            {
                 "name": "Midterm",
                 "subChapters": [
                     {
@@ -160,6 +164,10 @@
             {
                 "name": "Chapter 2",
                 "file": "قضايا اجتماعية/Chapter2.pdf"
+            },
+            {
+                "name": "Chapter 3",
+                "file": "قضايا اجتماعية/chapter3.pdf"
             }
         ],
         "playlists": [

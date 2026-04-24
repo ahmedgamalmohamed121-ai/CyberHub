@@ -1042,6 +1042,7 @@ let SUBJECT_DATA = {
             { "name": "Chapter 1", "file": "تراكيب محددة/Chapter 1 Set theory.pdf" },
             { "name": "Chapter 2", "file": "تراكيب محددة/Chapter 2 Relations.pdf" },
             { "name": "Chapter 6", "file": "تراكيب محددة/Graph 1 شابتر 6.pdf" },
+            { "name": "Trees Part 1", "file": "تراكيب محددة/Trees part 1.pdf" },
             {
                 "name": "Midterm",
                 "subChapters": [
@@ -1077,7 +1078,8 @@ let SUBJECT_DATA = {
                     { "name": "اسئلة الفصل الاول (PDF)", "file": "قضايا اجتماعية/Chapter1 Questions.pdf" }
                 ]
             },
-            { "name": "Chapter 2", "file": "قضايا اجتماعية/Chapter2.pdf" }
+            { "name": "Chapter 2", "file": "قضايا اجتماعية/Chapter2.pdf" },
+            { "name": "Chapter 3", "file": "قضايا اجتماعية/chapter3.pdf" }
         ],
         "playlists": [
             {
