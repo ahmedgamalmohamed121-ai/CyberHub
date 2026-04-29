@@ -87,8 +87,8 @@
                 "file": "تراكيب محددة/Graph 1 شابتر 6.pdf"
             },
             {
-                "name": "Trees Part 1",
-                "file": "تراكيب محددة/Trees part 1.pdf"
+                "name": "Trees",
+                "file": "تراكيب محددة/Trees.pdf"
             },
             {
                 "name": "Midterm",
@@ -323,6 +323,10 @@
             {
                 "name": "Part 1",
                 "file": "تراسل بيانات/Transmission Basics_ 1 CYBER_ 2026 Lecture Notes.pdf"
+            },
+            {
+                "name": "Part 2",
+                "file": "تراسل بيانات/Transmission -Part 2.pdf"
             }
         ],
         "playlists": [
