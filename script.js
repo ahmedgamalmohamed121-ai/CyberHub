@@ -1042,7 +1042,7 @@ let SUBJECT_DATA = {
             { "name": "Chapter 1", "file": "تراكيب محددة/Chapter 1 Set theory.pdf" },
             { "name": "Chapter 2", "file": "تراكيب محددة/Chapter 2 Relations.pdf" },
             { "name": "Chapter 6", "file": "تراكيب محددة/Graph 1 شابتر 6.pdf" },
-            { "name": "Trees Part 1", "file": "تراكيب محددة/Trees part 1.pdf" },
+            { "name": "Trees", "file": "تراكيب محددة/Trees.pdf" },
             {
                 "name": "Midterm",
                 "subChapters": [
@@ -1141,7 +1141,9 @@ let SUBJECT_DATA = {
                 ]
             },
             { "name": "ملخص تراسل بيانات", "file": "تراسل بيانات/ملخص تراسل بيانات/Network_Communication_Essentials.pdf" },
-            { "name": "Part 1", "file": "تراسل بيانات/Transmission Basics_ 1 CYBER_ 2026 Lecture Notes.pdf" }
+            { "name": "شرح تراسل بيانات (Part 2 عربي)", "file": "تراسل بيانات/ملخص تراسل بيانات/Data Transmission– Part 2.pdf" },
+            { "name": "Part 1", "file": "تراسل بيانات/Transmission Basics_ 1 CYBER_ 2026 Lecture Notes.pdf" },
+            { "name": "Part 2", "file": "تراسل بيانات/Transmission -Part 2.pdf" }
         ],
         "playlists": [
             { "name": "تراسل البيانات - Playlist", "url": "https://youtube.com/playlist?list=PLQX_sSyvDrILY5AGyc3ZwL03I-ppGkkI8&si=1Eb1cxPQM0_xS-39" }
